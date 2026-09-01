@@ -38,6 +38,7 @@
     .recording-field span { color: var(--rust); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
     .recording-field b { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
     .recording-field-wide { grid-column: span 2; }
+    .request-preview { width: 100%; min-height: 150px; margin: 18px 0 0; border: 1px solid var(--line); background: #07111f; color: var(--ink); font: 11px/1.6 'DM Mono', monospace; padding: 12px; resize: vertical; }
     .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'DM Mono', monospace; cursor: pointer; }
     .recording-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
     .wants-toolbar { justify-content: flex-end; }
@@ -92,8 +93,8 @@
       </section>
 
       <section class="view" id="cart-view" data-view="cart">
-        <div class="page-heading"><div><p class="eyebrow">03 / Your request</p><h2>Cart</h2></div><p class="heading-aside">Choose your recordings, then send the list to the collection owner. You will provide your email before the message opens.</p></div>
-        <div class="cart-layout"><div><div id="cart-items" class="cart-items"></div><div id="cart-empty" class="empty-state"><span class="empty-number">00</span><h3>Your cart is quiet.</h3><p>Browse the collection and add recordings you would like to request.</p><a href="#collection" class="text-link">Browse collection <span>→</span></a></div></div><aside class="checkout-panel"><p class="eyebrow">Request details</p><h3>Send your list</h3><p>Your email app will open with a pre-filled request addressed to the collection owner.</p><label for="visitor-email">Your email address</label><input id="visitor-email" type="email" required><label for="visitor-list">Link to your full list</label><input id="visitor-list" type="url" required><label for="visitor-note">Optional note</label><textarea id="visitor-note" rows="4"></textarea><button class="button button-dark full-width" id="checkout-button" type="button">Prepare email <span>↗</span></button><small class="form-hint">Email and list link are required. No data is stored here.</small></aside></div>
+        <div class="page-heading"><div><p class="eyebrow">03 / Your request</p><h2>Cart</h2></div><p class="heading-aside">Copy your request and send me an email :)</p></div>
+        <div class="cart-layout"><div><div id="cart-items" class="cart-items"></div><div id="cart-empty" class="empty-state"><span class="empty-number">00</span><h3>Your cart is quiet.</h3><p>Browse the collection and add recordings you would like to request.</p><a href="#collection" class="text-link">Browse collection <span>→</span></a></div></div><aside class="checkout-panel"><p class="eyebrow">Request details</p><h3>Copy your request</h3><p>Copy the selected recordings and send the list wherever you normally trade.</p><textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea><button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button><small class="form-hint" id="copy-status">Format: Show, Tour, Date, Master</small></aside></div>
       </section>
     </main>
     <footer class="site-footer"><span>© 2026 PersephonesChild Collection</span><a href="mailto:misiatrade@gmail.com">misiatrade@gmail.com</a></footer>
