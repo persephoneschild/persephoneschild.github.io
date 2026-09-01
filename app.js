@@ -29,7 +29,11 @@ function recordingField(recording, label, fallback = 'Not listed') { return reco
 function recordingDetails(recording, includeTraderFormat = true) { const notes = [recording['Master Notes'] && `Master: ${recording['Master Notes']}`, recording['Trading Notes'] && `Trader: ${recording['Trading Notes']}`].filter(Boolean).join(' | ') || 'Not listed'; const nft = recording['NFT Date'] || recording['NFT Forever'] || 'Not listed'; const traderFormat = includeTraderFormat ? `<div class="recording-field"><span>Trader Format</span><b>${recordingField(recording, 'Trader Format')}</b></div>` : ''; return `<div class="recording-fields"><div class="recording-field"><span>Audio / Video</span><b>${recordingField(recording, 'Audio / Video')}</b></div><div class="recording-field"><span>Tour</span><b>${recordingField(recording, 'Tour')}</b></div><div class="recording-field"><span>Date</span><b>${recordingField(recording, 'Date')}</b></div><div class="recording-field"><span>Master</span><b>${recordingField(recording, 'Master')}</b></div><div class="recording-field"><span>Cast</span><b>${recordingField(recording, 'Cast')}</b></div><div class="recording-field recording-field-wide"><span>Notes</span><b>${notes}</b></div><div class="recording-field"><span>NFT date</span><b>${nft}</b></div>${traderFormat}</div>`; }
 
 async function loadData() {
-  const [recordingsResponse, wantsResponse] = await Promise.all([fetch('collection.csv'), fetch('wants.csv')]);
+  const collectionUrl = new URL('collection.csv', document.baseURI);
+  const wantsUrl = new URL('wants.csv', document.baseURI);
+  const [recordingsResponse, wantsResponse] = await Promise.all([fetch(collectionUrl), fetch(wantsUrl)]);
+  if (!recordingsResponse.ok) throw new Error(`collection.csv returned ${recordingsResponse.status}`);
+  if (!wantsResponse.ok) throw new Error(`wants.csv returned ${wantsResponse.status}`);
   state.recordings = parseCSV(await recordingsResponse.text());
   state.wants = parseCSV(await wantsResponse.text());
   state.recordings.sort((a, b) => sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b))));
@@ -56,4 +60,4 @@ async function copyRequest() { if (!state.cart.length) { location.hash = 'collec
 
 document.querySelector('#collection-search').addEventListener('input', renderRecordings); document.querySelector('#collection-media-filter').addEventListener('change', renderRecordings); document.querySelector('#collection-sort').addEventListener('change', renderRecordings); document.querySelector('#wants-media-filter').addEventListener('change', renderWants); document.querySelector('#wants-sort').addEventListener('change', renderWants); document.querySelector('#copy-request-button').addEventListener('click', copyRequest); window.addEventListener('hashchange', showRoute); document.addEventListener('keydown', (event) => { if (event.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { event.preventDefault(); location.hash = 'collection'; document.querySelector('#collection-search').focus(); } });
 showRoute();
-loadData().catch(() => { document.querySelector('#recording-list').innerHTML = '<div class="empty-state"><h3>Collection unavailable.</h3><p>Run this site from a local server so the CSV files can load.</p></div>'; });
+loadData().catch((error) => { document.querySelector('#recording-list').innerHTML = `<div class="empty-state"><h3>Collection unavailable.</h3><p>${error.message}. Confirm collection.csv and wants.csv are in the same repository folder as index.html.</p></div>`; document.querySelector('#home-recording-count').textContent = '--'; document.querySelector('#home-want-count').textContent = '--'; });
