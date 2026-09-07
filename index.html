@@ -52,6 +52,15 @@
     @media (max-width: 700px) { .recording-row-top { grid-template-columns: 32px 1fr 82px; gap: 8px; } .recording-fields, .want-card .recording-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-left: 40px; gap: 16px 12px; } .recording-field-wide { grid-column: 1 / -1; } }
     .button-dark { background: #12304b; color: #f4f8fc; border-color: #55a9e8; }
     .button-dark:hover { background: #1d5278; border-color: #8bc7f2; }
+    .collection-menu { position: relative; }
+    .collection-menu summary { list-style: none; padding: 8px 0; color: var(--muted); cursor: pointer; }
+    .collection-menu summary::-webkit-details-marker { display: none; }
+    .collection-menu summary::after { content: '⌄'; margin-left: 6px; color: var(--accent); }
+    .collection-menu[open] summary, .collection-menu summary:hover, .collection-menu summary.active { color: var(--ink); }
+    .collection-dropdown { position: absolute; z-index: 5; top: 32px; left: 50%; min-width: 150px; padding: 8px 0; transform: translateX(-50%); border: 1px solid var(--line); background: #0d1d30; box-shadow: 0 12px 24px rgba(0, 0, 0, .22); }
+    .collection-dropdown a { display: block; padding: 10px 16px; color: var(--muted); white-space: nowrap; }
+    .collection-dropdown a:hover, .collection-dropdown a.active { color: var(--white); background: #12304b; }
+    @media (max-width: 700px) { .site-header { gap: 16px; } .main-nav { gap: 16px; } .collection-dropdown { left: 0; transform: none; } }
   </style>
 </head>
 <body>
@@ -60,9 +69,14 @@
       <a class="wordmark" href="#home" aria-label="PersephonesChild Collection home"><span class="wordmark-mark" aria-hidden="true">&#9825;</span><span>PERSEPHONESCHILD</span></a>
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#home" data-route="home">Home</a>
-        <a href="#videos" data-route="videos">Videos</a>
-        <a href="#hadestown" data-route="hadestown">Hadestown</a>
-        <a href="#audios" data-route="audios">Audios</a>
+        <details class="collection-menu">
+          <summary data-route="collection">Collection</summary>
+          <div class="collection-dropdown">
+            <a href="#videos" data-route="videos">Videos</a>
+            <a href="#hadestown" data-route="hadestown">Hadestown</a>
+            <a href="#audios" data-route="audios">Audios</a>
+          </div>
+        </details>
         <a href="#wants" data-route="wants">Wants</a>
       </nav>
       <a class="cart-link" href="#cart" aria-label="Open cart"><span class="cart-icon">+</span><span>Cart</span><span class="cart-count" id="cart-count">0</span></a>
@@ -84,7 +98,7 @@
 
       <section class="view" id="collection-view" data-view="collection">
         <div class="page-heading"><div><p class="eyebrow" id="collection-eyebrow">01 / Audios</p><h2 id="collection-title">Audios</h2></div><p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p></div>
-        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="collection-search" type="search" placeholder="Search recordings" autocomplete="off"><kbd>/</kbd></label><div class="result-meta"><span id="collection-result-count">0 recordings</span><select id="collection-sort" aria-label="Sort collection"><option value="title">A–Z by title</option><option value="year">Newest first</option><option value="duration">Longest first</option></select></div></div>
+        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="collection-search" type="search" placeholder="Search recordings" autocomplete="off"><kbd>/</kbd></label><div class="result-meta"><span id="collection-result-count">0 recordings</span><select id="collection-sort" aria-label="Sort collection"><option value="title">A–Z by title</option><option value="date-ascending">By date ascending</option><option value="date-descending">By date descending</option></select></div></div>
         <div class="recording-list" id="recording-list" aria-live="polite"></div>
       </section>
 
