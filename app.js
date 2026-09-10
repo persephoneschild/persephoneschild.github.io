@@ -1,9 +1,9 @@
 const OWNER_EMAIL = 'misiatrade@gmail.com';
 const STOP_WORDS = new Set(['a', 'an', 'the', '[]']);
 const COLLECTION_ROUTES = {
-  audios: { title: 'Audios', eyebrow: '01 / Audios', filter: (recording) => recording['Audio / Video'] === 'Audio' },
+  audios: { title: 'Audios', eyebrow: '03 / Audios', filter: (recording) => recording['Audio / Video'] === 'Audio' },
   hadestown: { title: 'Hadestown', eyebrow: '02 / Hadestown', filter: (recording) => recording['Audio / Video'] === 'Video' && recordingTitle(recording).toLowerCase() === 'hadestown' },
-  videos: { title: 'Videos', eyebrow: '03 / Videos', filter: (recording) => recording['Audio / Video'] === 'Video' && recordingTitle(recording).toLowerCase() !== 'hadestown' },
+  videos: { title: 'Videos', eyebrow: '01 / Videos', filter: (recording) => recording['Audio / Video'] === 'Video' && recordingTitle(recording).toLowerCase() !== 'hadestown' },
 };
 const state = { recordings: [], wants: [], cart: [] };
 
