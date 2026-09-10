@@ -97,19 +97,19 @@
       </section>
 
       <section class="view" id="collection-view" data-view="collection">
-        <div class="page-heading"><div><p class="eyebrow" id="collection-eyebrow">01 / Audios</p><h2 id="collection-title">Audios</h2></div><p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p></div>
+        <div class="page-heading"><div><p class="eyebrow" id="collection-eyebrow">03 / Audios</p><h2 id="collection-title">Audios</h2></div><p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p></div>
         <div class="toolbar"><label class="search-box"><span>⌕</span><input id="collection-search" type="search" placeholder="Search recordings" autocomplete="off"><kbd>/</kbd></label><div class="result-meta"><span id="collection-result-count">0 recordings</span><select id="collection-sort" aria-label="Sort collection"><option value="title">A–Z by title</option><option value="date-ascending">By date ascending</option><option value="date-descending">By date descending</option></select></div></div>
         <div class="recording-list" id="recording-list" aria-live="polite"></div>
       </section>
 
       <section class="view" id="wants-view" data-view="wants">
-        <div class="page-heading"><div><p class="eyebrow">02 / The wishlist</p><h2>Wants</h2></div><p class="heading-aside">My current wants</p></div>
+        <div class="page-heading"><div><p class="eyebrow">04 / Wants</p><h2>Wants</h2></div><p class="heading-aside">My current wants</p></div>
         <div class="toolbar wants-toolbar"><div class="result-meta"><span id="wants-result-count">0 wants</span><label for="wants-media-filter">Format</label><select id="wants-media-filter" aria-label="Filter wants by audio or video"><option value="all">All</option><option value="Audio">Audio</option><option value="Video">Video</option></select><select id="wants-sort" aria-label="Sort wants"><option value="title">A–Z by title</option></select></div></div><div class="recording-list" id="wants-list"></div>
         
       </section>
 
       <section class="view" id="cart-view" data-view="cart">
-        <div class="page-heading"><div><p class="eyebrow">03 / Your request</p><h2>Cart</h2></div><p class="heading-aside">Copy your request and send me an email :)</p></div>
+        <div class="page-heading"><div><p class="eyebrow">05 / Your request</p><h2>Cart</h2></div><p class="heading-aside">Copy your request and send me an email :)</p></div>
         <div class="cart-layout"><div><div id="cart-items" class="cart-items"></div><div id="cart-empty" class="empty-state"><span class="empty-number">00</span><h3>Your cart is quiet.</h3><p>Browse the collection and add recordings you would like to request.</p><a href="#audios" class="text-link">Browse collection <span>→</span></a></div></div><aside class="checkout-panel"><p class="eyebrow">Request details</p><h3>Copy your request</h3><p>Copy the selected recordings and send the list in an email.</p><textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea><button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button><small class="form-hint" id="copy-status">Format: Show - Tour - Date - Master</small></aside></div>
       </section>
     </main>
