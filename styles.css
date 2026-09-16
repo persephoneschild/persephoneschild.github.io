@@ -123,7 +123,7 @@ a{color:inherit;text-decoration:none}
    The giant page title plus the row holding search, result count and sort.
    ------------------------------------------------------------------------- */
 .page-heading{display:flex;justify-content:space-between;align-items:end;padding:72px 0 48px;border-bottom:1px solid var(--line)}
-.page-heading h2{font-size:clamp(54px,8vw,112px);line-height:.85;letter-spacing:-.07em;margin:0}
+.page-heading h2{font-size:clamp(38px,5.5vw,82px);line-height:.85;letter-spacing:-.07em;margin:0}
 .heading-aside{max-width:330px;color:var(--muted);font-size:12px;line-height:1.6;margin:0 0 3px}
 
 /* The bar with the search box on the left and count + sort dropdown on the right. */
