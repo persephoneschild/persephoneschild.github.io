@@ -1,24 +1,46 @@
 <!doctype html>
+<!--
+  PersephonesChild Collection - index.html
+
+  The whole site is this one page. Each <section class="view"> below is one
+  "page" (Home, Collection, Wants, Cart); app.js shows one at a time depending
+  on the # in the address bar, so nothing ever reloads.
+
+  Anything with an id="..." is filled in or updated by app.js.
+  Anything with data-route / data-view is used for navigation.
+-->
 <html lang="en">
 <head>
+  <!-- Page setup: text encoding, mobile scaling, the description search engines show, and the browser tab title. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PersephonesChild Collection">
   <title>PersephonesChild Collection</title>
+  <!-- Google Fonts: DM Mono (the small uppercase labels) and Manrope (everything else). The preconnect lines just make them load a little faster. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- The main stylesheet. -->
   <link rel="stylesheet" href="styles.css">
+  <!--
+    Site-specific overrides. This block loads AFTER styles.css, so every rule
+    here beats the matching rule in that file. This is where the dark blue
+    colour scheme and the current recording-row layout actually come from.
+  -->
   <style>
+    /* The dark blue palette, replacing the cream/olive defaults in styles.css. */
     :root { --ink: #e8f1fb; --muted: #91a7bd; --paper: #07111f; --line: #1d3852; --accent: #55a9e8; --rust: #8bc7f2; --white: #f4f8fc; }
+    /* Page background. */
     body { background: var(--paper); }
-    .hero-image { background-image: linear-gradient(160deg, rgba(7, 17, 31, .16), rgba(5, 21, 39, .72)), url('https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=85'); }
+    /* Dark styling for the "Copy your request" panel and its text box. */
     .checkout-panel { background: #0d1d30; }
     .checkout-panel input, .checkout-panel textarea { background: #07111f; color: var(--ink); }
+    /* The contact block and the bulleted rule lists on the home page. */
     .contact-block { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0; }
     .contact-block b { color: var(--ink); }
     .info-list { color: var(--muted); font-size: 12px; line-height: 1.65; margin: 0 0 28px; padding-left: 18px; max-width: 560px; }
     .info-list li { padding-left: 5px; margin-bottom: 10px; }
+    /* Home page layout: full-width hero, the two centred counters, roomier text. */
     .hero-grid { display: block; min-height: 0; }
     .hero-copy { max-width: 820px; padding-right: 0; }
     .last-updated { color: var(--muted); font: 11px 'DM Mono', monospace; margin: 18px 0 0; }
@@ -31,6 +53,9 @@
     .intro-band > div { width: 100%; }
     .intro-band .text-link { display: inline-flex; margin-top: 24px; }
     .info-list { max-width: none; }
+    /* Recording rows as they look now: title row on top, then a four-column grid
+       of details (Tour, Date, Master, Cast, Notes, NFT date, Trader Format).
+       Cast and Notes span two columns because they are long. */
     .recording-row { display: block; padding: 24px 0; }
     .recording-row-top { display: grid; grid-template-columns: 50px 1fr 100px; align-items: center; gap: 18px; }
     .recording-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 24px; margin: 22px 0 0 68px; }
@@ -38,20 +63,28 @@
     .recording-field span { color: var(--rust); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
     .recording-field b { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
     .recording-field-wide, .recording-field-cast { grid-column: span 2; }
+    /* The read-only box on the cart page holding the copyable request text. */
     .request-preview { width: 100%; min-height: 150px; margin: 18px 0 0; border: 1px solid var(--line); background: #07111f; color: var(--ink); font: 11px/1.6 'DM Mono', monospace; padding: 12px; resize: vertical; }
+    /* The "Add" checkbox at the right of each recording row. */
     .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'DM Mono', monospace; cursor: pointer; }
     .recording-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    /* Wants toolbar, and making the dropdowns readable against the dark background. */
     .wants-toolbar { justify-content: flex-end; }
     .result-meta select { background: #fff; color: #000; }
     .result-meta select:focus { background: #000; color: #fff; }
     .result-meta option { background: #000; color: #fff; }
+    /* Small typography tweaks: heading aside, the heart wordmark, hero headline size. */
     .heading-aside { font-size: 17px; }
     .wordmark-mark { background: transparent; color: var(--accent); font-size: 23px; line-height: 1; }
     .hero-copy h1 { font-size: clamp(40px, 5vw, 70px); }
-    .want-card .recording-fields { margin-left: 0; }
-    @media (max-width: 700px) { .recording-row-top { grid-template-columns: 32px 1fr 82px; gap: 8px; } .recording-fields, .want-card .recording-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-left: 40px; gap: 16px 12px; } .recording-field-wide, .recording-field-cast { grid-column: 1 / -1; } }
+    /* Phone layout for recording rows: narrower columns, details in two columns. */
+    @media (max-width: 700px) { .recording-row-top { grid-template-columns: 32px 1fr 82px; gap: 8px; } .recording-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-left: 40px; gap: 16px 12px; } .recording-field-wide, .recording-field-cast { grid-column: 1 / -1; } }
+    /* Buttons in the blue scheme, with a lighter blue on hover. */
     .button-dark { background: #12304b; color: #f4f8fc; border-color: #55a9e8; }
     .button-dark:hover { background: #1d5278; border-color: #8bc7f2; }
+    /* The Collection dropdown in the header. It is a plain <details> element, so
+       it opens and closes without any JavaScript; app.js only closes it again
+       after a link inside is clicked. */
     .collection-menu { position: relative; }
     .collection-menu summary { list-style: none; padding: 8px 0; color: var(--muted); cursor: pointer; }
     .collection-menu summary::-webkit-details-marker { display: none; }
@@ -60,15 +93,19 @@
     .collection-dropdown { position: absolute; z-index: 5; top: 32px; left: 50%; min-width: 150px; padding: 8px 0; transform: translateX(-50%); border: 1px solid var(--line); background: #0d1d30; box-shadow: 0 12px 24px rgba(0, 0, 0, .22); }
     .collection-dropdown a { display: block; padding: 10px 16px; color: var(--muted); white-space: nowrap; }
     .collection-dropdown a:hover, .collection-dropdown a.active { color: var(--white); background: #12304b; }
+    /* On phones the dropdown is left-aligned instead of centred. */
     @media (max-width: 700px) { .site-header { gap: 16px; } .main-nav { gap: 16px; } .collection-dropdown { left: 0; transform: none; } }
   </style>
 </head>
 <body>
   <div class="site-shell">
+    <!-- Header: wordmark on the left, navigation in the middle, cart on the right. -->
     <header class="site-header">
       <a class="wordmark" href="#home" aria-label="PersephonesChild Collection home"><span class="wordmark-mark" aria-hidden="true">&#9825;</span><span>PERSEPHONESCHILD</span></a>
+      <!-- Main navigation. app.js adds class="active" to whichever link matches the current page. -->
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#home" data-route="home">Home</a>
+        <!-- Collection menu. <summary> is the visible label; the links inside appear when it is open. -->
         <details class="collection-menu">
           <summary data-route="collection">Collection</summary>
           <div class="collection-dropdown">
@@ -79,10 +116,12 @@
         </details>
         <a href="#wants" data-route="wants">Wants</a>
       </nav>
+      <!-- Cart link. The number in #cart-count is kept up to date by renderCart() in app.js. -->
       <a class="cart-link" href="#cart" aria-label="Open cart"><span class="cart-icon">+</span><span>Cart</span><span class="cart-count" id="cart-count">0</span></a>
     </header>
 
     <main>
+      <!-- HOME PAGE -->
       <section class="view active" id="home-view" data-view="home">
         <div class="hero-grid">
           <div class="hero-copy">
@@ -92,29 +131,56 @@
             <p class="last-updated">Last Updated: September 16 2026</p>
           </div>
         </div>
+        <!-- The two counters. They read 00 until app.js has loaded the CSV files. -->
         <div class="home-stats"><div><strong id="home-recording-count">00</strong><span>recordings<br>in collection</span></div><div><strong id="home-want-count">00</strong><span>wants</span></div></div>
-        <div class="intro-band"><div><p class="eyebrow">Information</p><ul class="info-list"></ul><p class="eyebrow">General Info</p><ul class="info-list"><li>Trading only for my wants (I might make an exception if your list is 500+ and I find something interesting).</li><li>I do trades of up to 10 recordings (I can sometimes do more if I am less busy and we traded before).</li><li>I do not collect audios and will only trade for ones in my wants, even if my trade status is open.</li><li>Since I do not own many audios, I will trade unfairly for my wanted audios (1 audio: 1 video).</li></ul><p class="eyebrow">Contact Rules</p><ul class="info-list"><li>When my trade status is limited, please let me know which of my wants you have if you do not have Encora. I do not have time to look through lists.</li><li>I prefer being contacted by email, unless we have already started a conversation on Discord.</li><li>Please provide your full list in the initial email.</li><li>Provide full information on the recording you're requesting (Name, Date, Master, not just an Encora link) you can do that by adding recordings to your cart and copying it at the end.</li><li>I try to respond within 24h. Please send me another message if you have not heard back in 5 days.</li><li>Please put "Website Trade (n)" in the subject line of your email, with n being the number of videos requested.</li><li>I will not respond to emails that do not follow these rules.</li></ul><p class="contact-block"><b>Contact</b><br>email: misiatrade@gmail.com<br>discord: persephoneschild007</p></div><a href="#audios" class="text-link">View the collection <span>→</span></a></div>
+        <!-- Information band: your trading rules, contact rules and contact details. Plain text - edit it directly here. -->
+        <div class="intro-band"><div><p class="eyebrow">Information</p><ul class="info-list"></ul><p class="eyebrow">General Info</p><ul class="info-list">
+          <li>Trading only for my wants (I might make an exception if your list is 500+ and I find something interesting).</li>
+          <li>I do trades of up to 10 recordings (I can sometimes do more if I am less busy and we traded before).</li>
+          <li>I do not collect audios and will only trade for ones in my wants, even if my trade status is open.</li>
+          <li>Since I do not own many audios, I will trade unfairly for my wanted audios (1 audio: 1 video).</li>
+        </ul><p class="eyebrow">Contact Rules</p><ul class="info-list">
+          <li>When my trade status is limited, please let me know which of my wants you have if you do not have Encora. I do not have time to look through lists.</li>
+          <li>I prefer being contacted by email, unless we have already started a conversation on Discord.</li>
+          <li>Please provide your full list in the initial email.</li>
+          <li>Provide full information on the recording you're requesting (Name, Date, Master, not just an Encora link) you can do that by adding recordings to your cart and copying it at the end.</li>
+          <li>I try to respond within 24h. Please send me another message if you have not heard back in 5 days.</li>
+          <li>Please put "Website Trade (n)" in the subject line of your email, with n being the number of videos requested.</li>
+          <li>I will not respond to emails that do not follow these rules.</li>
+        </ul><p class="contact-block"><b>Contact</b><br>email: misiatrade@gmail.com<br>discord: persephoneschild007</p></div><a href="#audios" class="text-link">View the collection <span>→</span></a></div>
       </section>
 
+      <!-- COLLECTION PAGE (shared by Videos, Hadestown and Audios - the heading changes to match). -->
       <section class="view" id="collection-view" data-view="collection">
+        <!-- Heading. The eyebrow and title text are replaced by app.js depending on which of the three pages is open. -->
         <div class="page-heading"><div><p class="eyebrow" id="collection-eyebrow">03 / Audios</p><h2 id="collection-title">Audios</h2></div><p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p></div>
+        <!-- Toolbar: search box, result count, and the sort dropdown. -->
         <div class="toolbar"><label class="search-box"><span>⌕</span><input id="collection-search" type="search" placeholder="Search recordings" autocomplete="off"><kbd>/</kbd></label><div class="result-meta"><span id="collection-result-count">0 recordings</span><select id="collection-sort" aria-label="Sort collection"><option value="title">A–Z by title</option><option value="date-ascending">By date ascending</option><option value="date-descending">By date descending</option></select></div></div>
+        <!-- Empty on purpose: app.js builds the recording rows in here. aria-live tells screen readers to announce changes. -->
         <div class="recording-list" id="recording-list" aria-live="polite"></div>
       </section>
 
+      <!-- WANTS PAGE -->
       <section class="view" id="wants-view" data-view="wants">
         <div class="page-heading"><div><p class="eyebrow">04 / Wants</p><h2>Wants</h2></div><p class="heading-aside">My current wants</p></div>
+        <!-- Wants toolbar: count, the Audio/Video filter, and the sort dropdown. The list below is built by app.js. -->
         <div class="toolbar wants-toolbar"><div class="result-meta"><span id="wants-result-count">0 wants</span><label for="wants-media-filter">Format</label><select id="wants-media-filter" aria-label="Filter wants by audio or video"><option value="all">All</option><option value="Audio">Audio</option><option value="Video">Video</option></select><select id="wants-sort" aria-label="Sort wants"><option value="title">A–Z by title</option></select></div></div><div class="recording-list" id="wants-list"></div>
         
       </section>
 
+      <!-- CART PAGE -->
       <section class="view" id="cart-view" data-view="cart">
         <div class="page-heading"><div><p class="eyebrow">05 / Your request</p><h2>Cart</h2></div><p class="heading-aside">Copy your request and send me an email :)</p></div>
-        <div class="cart-layout"><div><div id="cart-items" class="cart-items"></div><div id="cart-empty" class="empty-state"><span class="empty-number">00</span><h3>Your cart is quiet.</h3><p>Browse the collection and add recordings you would like to request.</p><a href="#audios" class="text-link">Browse collection <span>→</span></a></div></div><aside class="checkout-panel"><p class="eyebrow">Request details</p><h3>Copy your request</h3><p>Copy the selected recordings and send the list in an email.</p><textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea><button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button><small class="form-hint" id="copy-status">Format: Show - Tour - Date - Master</small></aside></div>
+        <!-- Cart items on the left (or the empty-cart message), copy panel on the right. -->
+        <div class="cart-layout"><div><div id="cart-items" class="cart-items"></div>
+        <div id="cart-empty" class="empty-state"><span class="empty-number">00</span><h3>Your cart is quiet.</h3><p>Browse the collection and add recordings you would like to request.</p><a href="#audios" class="text-link">Browse collection <span>→</span></a></div></div>
+        <aside class="checkout-panel"><p class="eyebrow">Request details</p><h3>Copy your request</h3><p>Copy the selected recordings and send the list in an email.</p><textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea><button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button><small class="form-hint" id="copy-status">Format: Show - Tour - Date - Master</small></aside></div>
       </section>
     </main>
+    <!-- Footer. -->
     <footer class="site-footer"><span>© 2026 PersephonesChild Collection</span><a href="mailto:misiatrade@gmail.com">misiatrade@gmail.com</a></footer>
   </div>
+  <!-- Loads the JavaScript last, so all the elements above already exist when it runs. -->
   <script src="app.js"></script>
 </body>
 </html>
