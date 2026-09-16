@@ -68,8 +68,7 @@
     /* The "Add" checkbox at the right of each recording row. */
     .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'DM Mono', monospace; cursor: pointer; }
     .recording-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
-    /* Wants toolbar, and making the dropdowns readable against the dark background. */
-    .wants-toolbar { justify-content: flex-end; }
+    /* Making the result-meta dropdowns readable against the dark background. */
     .result-meta select { background: #fff; color: #000; }
     .result-meta select:focus { background: #000; color: #fff; }
     .result-meta option { background: #000; color: #fff; }
@@ -129,7 +128,7 @@
             <p class="eyebrow">Home</p>
             <h1>PersephonesChild<br><em>Collection</em></h1>
             <div class="hero-actions"><a class="button button-dark" href="#audios">Explore collection <span>↗</span></a></div>
-            <p class="last-updated">Last Updated: September 16 2026</p>
+            <p class="last-updated" id="last-updated">Last Updated: —</p>
           </div>
         </div>
         <!-- The two counters. They read 00 until app.js has loaded the CSV files. -->
@@ -204,8 +203,12 @@
           </div>
           <p class="heading-aside">My current wants</p>
         </div>
-        <!-- Wants toolbar: count, the Audio/Video filter, and the sort dropdown. The list below is built by app.js. -->
-        <div class="toolbar wants-toolbar">
+        <!-- Wants toolbar: search, count, the Audio/Video filter, and the sort dropdown. The list below is built by app.js. -->
+        <div class="toolbar">
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="wants-search" type="search" placeholder="Search wants" autocomplete="off">
+          </label>
           <div class="result-meta">
             <span id="wants-result-count">0 wants</span>
             <label for="wants-media-filter">Format</label>
@@ -219,7 +222,7 @@
             </select>
           </div>
         </div>
-        <div class="recording-list" id="wants-list"></div>
+        <div class="recording-list" id="wants-list" aria-live="polite"></div>
         
       </section>
 

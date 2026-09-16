@@ -7,7 +7,7 @@ A static, GitHub Pages-ready collection with CSV-powered collection and wants li
 Because browsers block local CSV requests when opening `index.html` directly, serve this folder with a local server, for example:
 
 ```bash
-python -m http.server 8000
+py -m http.server 8000
 ```
 
 Then open `http://localhost:8000`.

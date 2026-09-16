@@ -173,6 +173,17 @@ function formatCount(count, noun) {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
+// Spelled-out month names, used by formatIsoDate below.
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Turns an ISO date like "2026-09-16" into "September 16, 2026". Parsed by
+// splitting the string rather than with Date.parse/toLocaleDateString, so a
+// visitor west of UTC never sees the date shifted back by a day.
+function formatIsoDate(isoDate) {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
+}
+
 // Reads one column from a recording, showing "Not listed" when it is empty.
 function recordingField(recording, label, fallback = 'Not listed') {
   return recording[label] || fallback;
@@ -249,7 +260,8 @@ async function loadData() {
    Each render function reads from `state` and rewrites one part of the page.
    --------------------------------------------------------------------------- */
 
-// Redraws everything and refreshes the two counters on the home page.
+// Redraws everything, refreshes the two counters on the home page, and sets
+// "Last Updated" to the most recent Collected date — no manual editing needed.
 // padStart(2, '0') is what turns 7 into the "07" styling.
 function renderAll() {
   renderRecordings();
@@ -257,6 +269,11 @@ function renderAll() {
   renderCart();
   document.querySelector('#home-recording-count').textContent = String(state.recordings.length).padStart(2, '0');
   document.querySelector('#home-want-count').textContent = String(state.wants.length).padStart(2, '0');
+
+  // Collected dates are all "YYYY-MM-DD", so plain string comparison sorts
+  // them chronologically — no date parsing needed to find the latest one.
+  const latestCollected = state.recordings.reduce((latest, recording) => (recording.Collected > latest ? recording.Collected : latest), '');
+  document.querySelector('#last-updated').textContent = latestCollected ? `Last Updated: ${formatIsoDate(latestCollected)}` : 'Last Updated: —';
 }
 
 /**
@@ -308,14 +325,16 @@ function renderRecordings() {
 }
 
 /**
- * Draws the wants list. Simpler than the collection: no search and no cart
- * checkboxes, just the Audio / Video filter, always sorted A–Z by title.
+ * Draws the wants list. Same shape as renderRecordings: filters by the search
+ * box and the Audio/Video dropdown, always sorted A–Z by title.
  */
 function renderWants() {
   const mediaFilter = document.querySelector('#wants-media-filter').value;
+  const query = document.querySelector('#wants-search').value.toLowerCase().trim();
 
   const wants = state.wants
-    .filter((want) => mediaFilter === 'all' || want['Audio / Video'] === mediaFilter)
+    .filter((want) => (mediaFilter === 'all' || want['Audio / Video'] === mediaFilter)
+      && Object.values(want).some((value) => value.toLowerCase().includes(query)))
     .sort((a, b) => sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b))));
 
   document.querySelector('#wants-result-count').textContent = formatCount(wants.length, 'want');
@@ -324,7 +343,7 @@ function renderWants() {
   // whether each want is audio or video.
   document.querySelector('#wants-list').innerHTML = wants.length
     ? wants.map((want, index) => `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${isNftRestricted(want) ? ' is-nft' : ''}">${recordingTitle(want)}</strong></div>${recordingDetails(want, false, true)}</article>`).join('')
-    : '<div class="empty-state"><h3>No wants found.</h3><p>Try another media format.</p></div>';
+    : '<div class="empty-state"><h3>No wants found.</h3><p>Try another title, format, or keyword.</p></div>';
 }
 
 
@@ -437,9 +456,10 @@ document.querySelector('#collection-search').addEventListener('input', renderRec
 // Sort dropdown on the collection pages.
 document.querySelector('#collection-sort').addEventListener('change', renderRecordings);
 
-// Wants filters. (The wants sort dropdown currently only offers A–Z, so this
-// listener redraws an identically-sorted list — harmless, and ready for more
-// options later.)
+// Wants search box and filters. (The wants sort dropdown currently only
+// offers A–Z, so this listener redraws an identically-sorted list —
+// harmless, and ready for more options later.)
+document.querySelector('#wants-search').addEventListener('input', renderWants);
 document.querySelector('#wants-media-filter').addEventListener('change', renderWants);
 document.querySelector('#wants-sort').addEventListener('change', renderWants);
 
@@ -473,4 +493,5 @@ loadData().catch((error) => {
   document.querySelector('#recording-list').innerHTML = `<div class="empty-state"><h3>Collection unavailable.</h3><p>${error.message}. Confirm collection.csv and wants.csv are in the same repository folder as index.html.</p></div>`;
   document.querySelector('#home-recording-count').textContent = '--';
   document.querySelector('#home-want-count').textContent = '--';
+  document.querySelector('#last-updated').textContent = 'Last Updated: unavailable';
 });
