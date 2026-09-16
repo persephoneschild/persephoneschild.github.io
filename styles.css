@@ -30,9 +30,11 @@
    the dark blue scheme the site actually uses.
      --ink    main text     --muted  secondary text   --paper  page background
      --line   hairline rules --accent highlight       --rust   small accents
+     --nft    NFT-restricted recording titles (see index.html for the value
+              actually in use)
    ------------------------------------------------------------------------- */
 
-:root{--ink:#1f2824;--muted:#6d7770;--paper:#f3f0e8;--line:#cdd1c8;--accent:#d8e553;--rust:#b65f3d;--white:#fbfaf6}
+:root{--ink:#1f2824;--muted:#6d7770;--paper:#f3f0e8;--line:#cdd1c8;--accent:#d8e553;--rust:#b65f3d;--white:#fbfaf6;--nft:#c0392b}
 
 /* Make width/height include padding and borders - saves a lot of layout maths. */
 *{box-sizing:border-box}
@@ -145,6 +147,11 @@ kbd{font:10px 'DM Mono';color:var(--muted)}
 .recording-row:hover{background:rgba(216,229,83,.12)}
 .recording-index{color:var(--rust);font:10px 'DM Mono'}
 .recording-title{font-size:17px;font-weight:600}
+
+/* Applied by app.js (isNftRestricted) to titles that are "NFT Forever" or
+   whose "NFT Date" hasn't passed yet. Uses --nft so it stays red regardless
+   of which theme (base or the dark override in index.html) is active. */
+.recording-title.is-nft{color:var(--nft)}
 
 /* --- 8. Cart and request panel ---------------------------------------------
    The cart list on the left, the 'Copy your request' panel on the right.

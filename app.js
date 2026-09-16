@@ -36,14 +36,25 @@ const COLLECTION_ROUTES = {
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() === 'hadestown',
   },
-  // All other videos, i.e. videos that are not Hadestown (so nothing is
-  // listed twice across the two video pages).
-  videos: {
-    title: 'Videos',
-    eyebrow: '01 / Videos',
+  // All other videos, split alphabetically into two pages so nothing is
+  // listed twice across the two video pages or missed at the boundary:
+  // firstLetter() < 'i' covers a-h (and anything before "i", e.g. numbers or
+  // symbols); >= 'i' covers the rest.
+  'videos-a-h': {
+    title: 'Videos A–H',
+    eyebrow: '01 / Videos A–H',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
-      recordingTitle(recording).toLowerCase() !== 'hadestown',
+      recordingTitle(recording).toLowerCase() !== 'hadestown' &&
+      firstLetter(recording) < 'i',
+  },
+  'videos-i-z': {
+    title: 'Videos I–Z',
+    eyebrow: '02 / Videos I–Z',
+    filter: (recording) =>
+      recording['Audio / Video'] === 'Video' &&
+      recordingTitle(recording).toLowerCase() !== 'hadestown' &&
+      firstLetter(recording) >= 'i',
   },
 };
 
@@ -132,6 +143,13 @@ function sortableTitle(title) {
     .trim();
 }
 
+// The first character of a title as it's used for sorting, so "The Wiz" counts
+// as W and "[Workshop] Hadestown" counts as W too. Used to split Videos into
+// A-H / I-Z pages.
+function firstLetter(recording) {
+  return sortableTitle(recordingTitle(recording)).charAt(0).toLowerCase();
+}
+
 // Converts the Date column into a number so dates can be sorted.
 // It first removes any trailing bracketed note, e.g. "June, 2024 (matinee)".
 // Anything unparseable sorts last, because Infinity is larger than any date.
@@ -139,6 +157,15 @@ function recordingDateValue(recording) {
   const date = String(recording.Date || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
   const timestamp = Date.parse(date);
   return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
+}
+
+// True when a recording is still under NFT restriction: marked "NFT Forever",
+// or given an "NFT Date" that hasn't passed yet (i.e. it's NFT until then).
+// A past NFT Date means the restriction has already expired.
+function isNftRestricted(recording) {
+  if (recording['NFT Forever']) return true;
+  const nftDate = Date.parse(recording['NFT Date']);
+  return !Number.isNaN(nftDate) && nftDate > Date.now();
 }
 
 // "1 recording" / "12 recordings" — adds the plural s only when needed.
@@ -269,7 +296,8 @@ function renderRecordings() {
   list.innerHTML = recordings.length
     ? recordings.map((recording, index) => {
       const selected = state.cart.some((item) => item._id === recording._id);
-      return `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title">${recordingTitle(recording)}</strong><label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label></div>${recordingDetails(recording, true, false)}</article>`;
+      const titleClass = isNftRestricted(recording) ? ' is-nft' : '';
+      return `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${titleClass}">${recordingTitle(recording)}</strong><label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label></div>${recordingDetails(recording, true, false)}</article>`;
     }).join('')
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
@@ -295,7 +323,7 @@ function renderWants() {
   // Note the flags passed to recordingDetails: no Trader Format, but do show
   // whether each want is audio or video.
   document.querySelector('#wants-list').innerHTML = wants.length
-    ? wants.map((want, index) => `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title">${recordingTitle(want)}</strong></div>${recordingDetails(want, false, true)}</article>`).join('')
+    ? wants.map((want, index) => `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${isNftRestricted(want) ? ' is-nft' : ''}">${recordingTitle(want)}</strong></div>${recordingDetails(want, false, true)}</article>`).join('')
     : '<div class="empty-state"><h3>No wants found.</h3><p>Try another media format.</p></div>';
 }
 
@@ -354,10 +382,10 @@ function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
   // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
-  const validRoute = ['home', 'audios', 'hadestown', 'videos', 'wants', 'cart'].includes(route) ? route : 'home';
+  const validRoute = ['home', 'audios', 'hadestown', 'videos-a-h', 'videos-i-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
   // Videos, Hadestown and Audios all share the one collection section.
-  const isCollectionRoute = ['audios', 'hadestown', 'videos'].includes(validRoute);
+  const isCollectionRoute = ['audios', 'hadestown', 'videos-a-h', 'videos-i-z'].includes(validRoute);
 
   // Show the matching section, hide the others.
   document.querySelectorAll('.view').forEach((view) =>

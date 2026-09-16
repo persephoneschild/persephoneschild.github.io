@@ -29,7 +29,7 @@
   -->
   <style>
     /* The dark blue palette, replacing the cream/olive defaults in styles.css. */
-    :root { --ink: #e8f1fb; --muted: #91a7bd; --paper: #07111f; --line: #1d3852; --accent: #55a9e8; --rust: #8bc7f2; --white: #f4f8fc; }
+    :root { --ink: #e8f1fb; --muted: #91a7bd; --paper: #07111f; --line: #1d3852; --accent: #55a9e8; --rust: #8bc7f2; --white: #f4f8fc; --nft: #ff6b6b; }
     /* Page background. */
     body { background: var(--paper); }
     /* Dark styling for the "Copy your request" panel and its text box. */
@@ -109,7 +109,8 @@
         <details class="collection-menu">
           <summary data-route="collection">Collection</summary>
           <div class="collection-dropdown">
-            <a href="#videos" data-route="videos">Videos</a>
+            <a href="#videos-a-h" data-route="videos-a-h">Videos A–H</a>
+            <a href="#videos-i-z" data-route="videos-i-z">Videos I–Z</a>
             <a href="#hadestown" data-route="hadestown">Hadestown</a>
             <a href="#audios" data-route="audios">Audios</a>
           </div>
@@ -132,53 +133,132 @@
           </div>
         </div>
         <!-- The two counters. They read 00 until app.js has loaded the CSV files. -->
-        <div class="home-stats"><div><strong id="home-recording-count">00</strong><span>recordings<br>in collection</span></div><div><strong id="home-want-count">00</strong><span>wants</span></div></div>
+        <div class="home-stats">
+          <div><strong id="home-recording-count">00</strong><span>recordings<br>in collection</span></div>
+          <div><strong id="home-want-count">00</strong><span>wants</span></div>
+        </div>
         <!-- Information band: your trading rules, contact rules and contact details. Plain text - edit it directly here. -->
-        <div class="intro-band"><div><p class="eyebrow">Information</p><ul class="info-list"></ul><p class="eyebrow">General Info</p><ul class="info-list">
-          <li>Trading only for my wants (I might make an exception if your list is 500+ and I find something interesting).</li>
-          <li>I do trades of up to 10 recordings (I can sometimes do more if I am less busy and we traded before).</li>
-          <li>I do not collect audios and will only trade for ones in my wants, even if my trade status is open.</li>
-          <li>Since I do not own many audios, I will trade unfairly for my wanted audios (1 audio: 1 video).</li>
-        </ul><p class="eyebrow">Contact Rules</p><ul class="info-list">
-          <li>When my trade status is limited, please let me know which of my wants you have if you do not have Encora. I do not have time to look through lists.</li>
-          <li>I prefer being contacted by email, unless we have already started a conversation on Discord.</li>
-          <li>Please provide your full list in the initial email.</li>
-          <li>Provide full information on the recording you're requesting (Name, Date, Master, not just an Encora link) you can do that by adding recordings to your cart and copying it at the end.</li>
-          <li>I try to respond within 24h. Please send me another message if you have not heard back in 5 days.</li>
-          <li>Please put "Website Trade (n)" in the subject line of your email, with n being the number of videos requested.</li>
-          <li>I will not respond to emails that do not follow these rules.</li>
-        </ul><p class="contact-block"><b>Contact</b><br>email: misiatrade@gmail.com<br>discord: persephoneschild007</p></div><a href="#audios" class="text-link">View the collection <span>→</span></a></div>
+        <div class="intro-band">
+          <div>
+            <p class="eyebrow">Information</p>
+            <ul class="info-list"></ul>
+            <p class="eyebrow">General Info</p>
+            <ul class="info-list">
+              <li>Trading only for my wants (I might make an exception if your list is 500+ and I find something interesting).</li>
+              <li>I do trades of up to 10 recordings (I can sometimes do more if I am less busy and we traded before).</li>
+              <li>I do not collect audios and will only trade for ones in my wants, even if my trade status is open.</li>
+              <li>Since I do not own many audios, I will trade unfairly for my wanted audios (1 audio: 1 video).</li>
+            </ul>
+            <p class="eyebrow">Contact Rules</p>
+            <ul class="info-list">
+              <li>When my trade status is limited, please let me know which of my wants you have if you do not have Encora. I do not have time to look through lists.</li>
+              <li>I prefer being contacted by email, unless we have already started a conversation on Discord.</li>
+              <li>Please provide your full list in the initial email.</li>
+              <li>Provide full information on the recording you're requesting (Name, Date, Master, not just an Encora link) you can do that by adding recordings to your cart and copying it at the end.</li>
+              <li>I try to respond within 24h. Please send me another message if you have not heard back in 5 days.</li>
+              <li>Please put "Website Trade (n)" in the subject line of your email, with n being the number of videos requested.</li>
+              <li>I will not respond to emails that do not follow these rules.</li>
+            </ul>
+            <p class="contact-block"><b>Contact</b><br>email: misiatrade@gmail.com<br>discord: persephoneschild007</p>
+          </div>
+          <a href="#audios" class="text-link">View the collection <span>→</span></a>
+        </div>
       </section>
 
       <!-- COLLECTION PAGE (shared by Videos, Hadestown and Audios - the heading changes to match). -->
       <section class="view" id="collection-view" data-view="collection">
         <!-- Heading. The eyebrow and title text are replaced by app.js depending on which of the three pages is open. -->
-        <div class="page-heading"><div><p class="eyebrow" id="collection-eyebrow">03 / Audios</p><h2 id="collection-title">Audios</h2></div><p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p></div>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow" id="collection-eyebrow">03 / Audios</p>
+            <h2 id="collection-title">Audios</h2>
+          </div>
+          <p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p>
+        </div>
         <!-- Toolbar: search box, result count, and the sort dropdown. -->
-        <div class="toolbar"><label class="search-box"><span>⌕</span><input id="collection-search" type="search" placeholder="Search recordings" autocomplete="off"><kbd>/</kbd></label><div class="result-meta"><span id="collection-result-count">0 recordings</span><select id="collection-sort" aria-label="Sort collection"><option value="title">A–Z by title</option><option value="date-ascending">By date ascending</option><option value="date-descending">By date descending</option></select></div></div>
+        <div class="toolbar">
+          <label class="search-box">
+            <span>⌕</span>
+            <input id="collection-search" type="search" placeholder="Search recordings" autocomplete="off">
+            <kbd>/</kbd>
+          </label>
+          <div class="result-meta">
+            <span id="collection-result-count">0 recordings</span>
+            <select id="collection-sort" aria-label="Sort collection">
+              <option value="title">A–Z by title</option>
+              <option value="date-ascending">By date ascending</option>
+              <option value="date-descending">By date descending</option>
+            </select>
+          </div>
+        </div>
         <!-- Empty on purpose: app.js builds the recording rows in here. aria-live tells screen readers to announce changes. -->
         <div class="recording-list" id="recording-list" aria-live="polite"></div>
       </section>
 
       <!-- WANTS PAGE -->
       <section class="view" id="wants-view" data-view="wants">
-        <div class="page-heading"><div><p class="eyebrow">04 / Wants</p><h2>Wants</h2></div><p class="heading-aside">My current wants</p></div>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">04 / Wants</p>
+            <h2>Wants</h2>
+          </div>
+          <p class="heading-aside">My current wants</p>
+        </div>
         <!-- Wants toolbar: count, the Audio/Video filter, and the sort dropdown. The list below is built by app.js. -->
-        <div class="toolbar wants-toolbar"><div class="result-meta"><span id="wants-result-count">0 wants</span><label for="wants-media-filter">Format</label><select id="wants-media-filter" aria-label="Filter wants by audio or video"><option value="all">All</option><option value="Audio">Audio</option><option value="Video">Video</option></select><select id="wants-sort" aria-label="Sort wants"><option value="title">A–Z by title</option></select></div></div><div class="recording-list" id="wants-list"></div>
+        <div class="toolbar wants-toolbar">
+          <div class="result-meta">
+            <span id="wants-result-count">0 wants</span>
+            <label for="wants-media-filter">Format</label>
+            <select id="wants-media-filter" aria-label="Filter wants by audio or video">
+              <option value="all">All</option>
+              <option value="Audio">Audio</option>
+              <option value="Video">Video</option>
+            </select>
+            <select id="wants-sort" aria-label="Sort wants">
+              <option value="title">A–Z by title</option>
+            </select>
+          </div>
+        </div>
+        <div class="recording-list" id="wants-list"></div>
         
       </section>
 
       <!-- CART PAGE -->
       <section class="view" id="cart-view" data-view="cart">
-        <div class="page-heading"><div><p class="eyebrow">05 / Your request</p><h2>Cart</h2></div><p class="heading-aside">Copy your request and send me an email :)</p></div>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">05 / Your request</p>
+            <h2>Cart</h2>
+          </div>
+          <p class="heading-aside">Copy your request and send me an email :)</p>
+        </div>
         <!-- Cart items on the left (or the empty-cart message), copy panel on the right. -->
-        <div class="cart-layout"><div><div id="cart-items" class="cart-items"></div>
-        <div id="cart-empty" class="empty-state"><span class="empty-number">00</span><h3>Your cart is quiet.</h3><p>Browse the collection and add recordings you would like to request.</p><a href="#audios" class="text-link">Browse collection <span>→</span></a></div></div>
-        <aside class="checkout-panel"><p class="eyebrow">Request details</p><h3>Copy your request</h3><p>Copy the selected recordings and send the list in an email.</p><textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea><button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button><small class="form-hint" id="copy-status">Format: Show - Tour - Date - Master</small></aside></div>
+        <div class="cart-layout">
+          <div>
+            <div id="cart-items" class="cart-items"></div>
+            <div id="cart-empty" class="empty-state">
+              <span class="empty-number">00</span>
+              <h3>Your cart is quiet.</h3>
+              <p>Browse the collection and add recordings you would like to request.</p>
+              <a href="#audios" class="text-link">Browse collection <span>→</span></a>
+            </div>
+          </div>
+          <aside class="checkout-panel">
+            <p class="eyebrow">Request details</p>
+            <h3>Copy your request</h3>
+            <p>Copy the selected recordings and send the list in an email.</p>
+            <textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea>
+            <button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button>
+            <small class="form-hint" id="copy-status">Format: Show - Tour - Date - Master</small>
+          </aside>
+        </div>
       </section>
     </main>
     <!-- Footer. -->
-    <footer class="site-footer"><span>© 2026 PersephonesChild Collection</span><a href="mailto:misiatrade@gmail.com">misiatrade@gmail.com</a></footer>
+    <footer class="site-footer">
+      <span>© 2026 PersephonesChild Collection</span>
+      <a href="mailto:misiatrade@gmail.com">misiatrade@gmail.com</a>
+    </footer>
   </div>
   <!-- Loads the JavaScript last, so all the elements above already exist when it runs. -->
   <script src="app.js"></script>
