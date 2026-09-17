@@ -221,6 +221,18 @@ function formatIsoDate(isoDate) {
   return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
 }
 
+// The value shown in the "NFT date" field. "NFT Forever" outranks any date,
+// since that restriction never lifts. Otherwise the date is formatted the same
+// way as the Date column; the Encora API sends it as a full timestamp
+// ("2014-11-30T00:00:00.000000Z"), which formatIsoDate trims for us. Anything
+// that isn't an ISO date is shown exactly as entered.
+function formatNftValue(recording) {
+  if (recording['NFT Forever']) return 'NFT Forever';
+  const raw = recording['NFT Date'] || '';
+  if (!raw) return 'Not listed';
+  return /^\d{4}-\d{2}-\d{2}/.test(raw) ? formatIsoDate(raw) : raw;
+}
+
 // Reads one column from a recording, showing "Not listed" when it is empty.
 function recordingField(recording, label, fallback = 'Not listed') {
   return recording[label] || fallback;
@@ -235,7 +247,7 @@ function recordingField(recording, label, fallback = 'Not listed') {
 function formatRecordingDate(recording) {
   const raw = recording.Date || '';
   if (!raw) return 'Not listed';
-  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? formatIsoDate(raw) : raw;
+  return /^\d{4}-\d{2}-\d{2}/.test(raw) ? formatIsoDate(raw) : raw;
 }
 
 /**
@@ -256,8 +268,8 @@ function recordingDetails(recording, includeTraderFormat = true, includeMediaTyp
     recording['Trading Notes'] && `Trader: ${recording['Trading Notes']}`,
   ].filter(Boolean).join(' | ') || 'Not listed';
 
-  // Show the specific NFT date if there is one, otherwise the NFT Forever flag.
-  const nft = recording['NFT Date'] || recording['NFT Forever'] || 'Not listed';
+  // "NFT Forever", a formatted NFT date, or "Not listed".
+  const nft = formatNftValue(recording);
 
   // These two blocks are included or left empty depending on the flags above.
   const mediaType = includeMediaType

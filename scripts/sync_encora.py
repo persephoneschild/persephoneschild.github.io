@@ -166,7 +166,8 @@ def map_collection_record(item):
         "Cast": format_cast(recording.get("cast")),
         "Master Notes": recording.get("master_notes") or "",
         "Trading Notes": recording.get("notes") or "",
-        "NFT Date": nft.get("nft_date") or "",
+        # nft_date arrives as a full timestamp; only the date is shown.
+        "NFT Date": (nft.get("nft_date") or "")[:10],
         "NFT Forever": bool_to_csv(nft.get("nft_forever")),
         "Not For Sale": bool_to_csv(metadata.get("is_nfs")),
         "Type": metadata.get("recording_type", ""),
@@ -214,7 +215,8 @@ def map_want_record(item):
         "Cast": format_cast(recording.get("cast")),
         "Master Notes": recording.get("master_notes") or "",
         "Trading Notes": recording.get("notes") or "",
-        "NFT Date": nft.get("nft_date") or "",
+        # nft_date arrives as a full timestamp; only the date is shown.
+        "NFT Date": (nft.get("nft_date") or "")[:10],
         "NFT Forever": bool_to_csv(nft.get("nft_forever")),
         "Not For Sale": bool_to_csv(metadata.get("is_nfs")),
         "Type": metadata.get("recording_type", ""),
