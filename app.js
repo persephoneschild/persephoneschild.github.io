@@ -25,13 +25,13 @@ const COLLECTION_ROUTES = {
   // Everything marked as Audio in the "Audio / Video" column.
   audios: {
     title: 'Audios',
-    eyebrow: '03 / Audios',
+    eyebrow: '07 / Audios',
     filter: (recording) => recording['Audio / Video'] === 'Audio',
   },
   // Videos whose show name is exactly "Hadestown" — your dedicated page.
   hadestown: {
     title: 'Hadestown',
-    eyebrow: '02 / Hadestown',
+    eyebrow: '06 / Hadestown',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() === 'hadestown',
@@ -59,7 +59,7 @@ const COLLECTION_ROUTES = {
   },
   'videos-i-m': {
     title: 'Videos I–M',
-    eyebrow: '02 / Videos I–M',
+    eyebrow: '03 / Videos I–M',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -68,7 +68,7 @@ const COLLECTION_ROUTES = {
   },
   'videos-n-r': {
     title: 'Videos N–R',
-    eyebrow: '02 / Videos N–R',
+    eyebrow: '04 / Videos N–R',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -77,7 +77,7 @@ const COLLECTION_ROUTES = {
   },
   'videos-s-z': {
     title: 'Videos S–Z',
-    eyebrow: '02 / Videos S–Z',
+    eyebrow: '05 / Videos S–Z',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
