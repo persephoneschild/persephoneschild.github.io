@@ -85,6 +85,11 @@ const COLLECTION_ROUTES = {
   },
 };
 
+// The pages listed on the Videos index page (#videos), in the order they
+// appear there. Every key must exist in COLLECTION_ROUTES above; add a key
+// here when you add a video page, and the card appears automatically.
+const VIDEO_INDEX_ROUTES = ['videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'hadestown'];
+
 // The single source of truth for the page:
 //   recordings — every row from collection.csv
 //   wants      — every row from wants.csv
@@ -292,6 +297,7 @@ async function loadData() {
 // padStart(2, '0') is what turns 7 into the "07" styling.
 function renderAll() {
   renderRecordings();
+  renderVideoIndex();
   renderWants();
   renderCart();
   document.querySelector('#home-recording-count').textContent = String(state.recordings.length).padStart(2, '0');
@@ -301,6 +307,24 @@ function renderAll() {
   // them chronologically — no date parsing needed to find the latest one.
   const latestCollected = state.recordings.reduce((latest, recording) => (recording.Collected > latest ? recording.Collected : latest), '');
   document.querySelector('#last-updated').textContent = latestCollected ? `Last Updated: ${formatIsoDate(latestCollected)}` : 'Last Updated: —';
+}
+
+/**
+ * Draws the Videos index page: one card per entry in VIDEO_INDEX_ROUTES,
+ * each linking to that page and showing how many recordings are on it.
+ * The count is worked out by running the page's own filter over the
+ * collection, so it can never drift out of step with the page itself.
+ */
+function renderVideoIndex() {
+  const list = document.querySelector('#video-index-list');
+  if (!list) return;
+
+  list.innerHTML = VIDEO_INDEX_ROUTES.map((key) => {
+    const route = COLLECTION_ROUTES[key];
+    if (!route) return '';
+    const count = state.recordings.filter(route.filter).length;
+    return `<a class="index-card" href="#${key}"><p class="eyebrow">${route.eyebrow}</p><h3>${route.title}</h3><p>${formatCount(count, 'recording')}</p></a>`;
+  }).join('');
 }
 
 /**
@@ -434,7 +458,7 @@ function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
   // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
-  const validRoute = ['home', 'audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
+  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
   // Videos, Hadestown and Audios all share the one collection section.
   const isCollectionRoute = ['audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z'].includes(validRoute);
@@ -443,10 +467,14 @@ function showRoute() {
   document.querySelectorAll('.view').forEach((view) =>
     view.classList.toggle('active', view.dataset.view === validRoute || (view.dataset.view === 'collection' && isCollectionRoute)));
 
+  // The Videos index is in the Collection menu but has its own section, so it
+  // keeps the menu highlighted without sharing the collection view.
+  const isCollectionMenuRoute = isCollectionRoute || validRoute === 'videos';
+
   // Highlight the matching nav link (the Collection menu stays highlighted for
-  // all three of its sub-pages).
+  // all of its sub-pages).
   document.querySelectorAll('[data-route]').forEach((link) =>
-    link.classList.toggle('active', link.dataset.route === validRoute || (link.dataset.route === 'collection' && isCollectionRoute)));
+    link.classList.toggle('active', link.dataset.route === validRoute || (link.dataset.route === 'collection' && isCollectionMenuRoute)));
 
   // Moving between Videos / Hadestown / Audios reuses the same section, so its
   // contents have to be redrawn. The length check avoids running before the

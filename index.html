@@ -92,6 +92,14 @@
     .collection-dropdown { position: absolute; z-index: 5; top: 32px; left: 50%; min-width: 150px; padding: 8px 0; transform: translateX(-50%); border: 1px solid var(--line); background: #0d1d30; box-shadow: 0 12px 24px rgba(0, 0, 0, .22); }
     .collection-dropdown a { display: block; padding: 10px 16px; color: var(--muted); white-space: nowrap; }
     .collection-dropdown a:hover, .collection-dropdown a.active { color: var(--white); background: #12304b; }
+    /* The Videos index page (#videos): one card per video page. */
+    .index-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 40px 0 90px; }
+    .index-card { display: block; padding: 26px; border: 1px solid var(--line); background: #0d1d30; transition: .2s; }
+    .index-card:hover { border-color: var(--accent); background: #12304b; }
+    .index-card .eyebrow { margin: 0 0 14px; }
+    .index-card h3 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
+    .index-card p { margin: 10px 0 0; color: var(--muted); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+    @media (max-width: 700px) { .index-grid { grid-template-columns: 1fr; gap: 12px; padding: 28px 0 60px; } }
     /* On phones the dropdown is left-aligned instead of centred. */
     @media (max-width: 700px) { .site-header { gap: 16px; } .main-nav { gap: 16px; } .collection-dropdown { left: 0; transform: none; } }
   </style>
@@ -108,11 +116,7 @@
         <details class="collection-menu">
           <summary data-route="collection">Collection</summary>
           <div class="collection-dropdown">
-            <a href="#videos-a-c" data-route="videos-a-c">Videos A–C</a>
-            <a href="#videos-d-h" data-route="videos-d-h">Videos D–H</a>
-            <a href="#videos-i-m" data-route="videos-i-m">Videos I–M</a>
-            <a href="#videos-n-r" data-route="videos-n-r">Videos N–R</a>
-            <a href="#videos-s-z" data-route="videos-s-z">Videos S–Z</a>
+            <a href="#videos" data-route="videos">Videos</a>
             <a href="#hadestown" data-route="hadestown">Hadestown</a>
             <a href="#audios" data-route="audios">Audios</a>
           </div>
@@ -165,6 +169,18 @@
           </div>
           <a href="#audios" class="text-link">View the collection <span>→</span></a>
         </div>
+      </section>
+
+      <!-- VIDEOS INDEX PAGE: just links to the individual video pages. The cards are built by renderVideoIndex() in app.js. -->
+      <section class="view" id="videos-view" data-view="videos">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">01 / Videos</p>
+            <h2>Videos</h2>
+          </div>
+          <p class="heading-aside">The videos are split alphabetically by title, ignoring articles like “the”, “a”, and “an”. Hadestown has its own page.</p>
+        </div>
+        <div class="index-grid" id="video-index-list"></div>
       </section>
 
       <!-- COLLECTION PAGE (shared by Videos, Hadestown and Audios - the heading changes to match). -->
