@@ -11,19 +11,21 @@ In CI, ENCORA_API_KEY comes from a GitHub Actions secret (see
 .github/workflows/sync-encora.yml).
 
 ------------------------------------------------------------------------
-IMPORTANT - this needs one more step before it will work:
-The Encora API docs (https://encora.it/api-docs) don't publish the exact
-field names in the JSON response bodies, only the endpoints. The FIELD
-MAP dicts below are my best guess based on the site's own terminology
-(Show, Tour, Master, NFT Date, etc.) and will need correcting once you
-can see a real response.
+STATUS
+Both mappings are confirmed against real API responses.
 
-To finish the setup:
-  1. Request API access, get your key.
-  2. Run:  curl -H "Authorization: Bearer YOUR_KEY" https://encora.it/api/collection?per_page=1
-     and:  curl -H "Authorization: Bearer YOUR_KEY" https://encora.it/api/wants
-  3. Paste one sample record from each into the chat and the two FIELD_MAP
-     dicts below will be corrected to match exactly.
+Collection: /api/collection is Laravel-style paginated (current_page /
+last_page / data), so it's walked with fetch_all_pages().
+
+Wants: /api/wants returns { recording: {...}, priority, priority_label }
+per item, wrapping the exact same nested `recording` object as collection
+(cast, date, nft, metadata, notes, master_notes, release_format all
+present). It isn't documented as paginated, so it's fetched with a single
+api_get() call and no per_page param.
+
+priority / priority_label (0-5, or -1 for "Trade Requested") are not
+written to wants.csv - the site has no Priority column and doesn't need
+one.
 ------------------------------------------------------------------------
 """
 
@@ -31,15 +33,14 @@ import csv
 import os
 import sys
 import time
+import json
 import urllib.request
 import urllib.error
-import json
+from urllib.parse import urlencode
 
 BASE_URL = "https://encora.it"
 API_KEY = os.environ.get("ENCORA_API_KEY")
 
-# Columns used by both collection.csv and wants.csv, in the order the site
-# expects (see README.md > "CSV columns").
 SHARED_COLUMNS = [
     "Audio / Video", "Show", "Tour", "Date", "Matinée / Evening", "Master",
     "Cast", "Master Notes", "Trading Notes", "NFT Date", "NFT Forever",
@@ -47,53 +48,20 @@ SHARED_COLUMNS = [
     "City", "Link",
 ]
 
-# Extra columns collection.csv has that wants.csv doesn't.
 COLLECTION_ONLY_COLUMNS = [
     "Gifting Status", "Limited Trade Status", "Trader Format", "My Notes",
     "Collected",
 ]
 
-# --------------------------------------------------------------------
-# FIELD MAPS - TODO: verify against a real API response, see notice above.
-# Each entry is: our CSV column name -> key(s) in the Encora JSON record.
-# A tuple means "try these keys in order, use the first that exists" -
-# useful while we're not sure which naming the API actually uses.
-# --------------------------------------------------------------------
-COMMON_FIELD_MAP = {
-    "Audio / Video": ("audio_video", "type", "media_type"),
-    "Show": ("show", "show_name", "title"),
-    "Tour": ("tour",),
-    "Date": ("date", "performance_date"),
-    "Matinée / Evening": ("matinee_evening", "performance"),
-    "Master": ("master", "master_name"),
-    "Cast": ("cast",),
-    "Master Notes": ("master_notes",),
-    "Trading Notes": ("trading_notes", "notes"),
-    "NFT Date": ("nft_date",),
-    "NFT Forever": ("nft_forever",),
-    "Not For Sale": ("not_for_sale",),
-    "Type": ("recording_type", "type"),
-    "Release Format": ("release_format", "format"),
-    "Amount Recorded": ("amount_recorded", "amount"),
-    "Venue": ("venue",),
-    "City": ("city",),
-    "Link": ("link", "url"),
-}
 
-COLLECTION_FIELD_MAP = {
-    "Gifting Status": ("gifting_status",),
-    "Limited Trade Status": ("limited_trade_status", "trade_status"),
-    "Trader Format": ("trader_format", "format"),
-    "My Notes": ("my_notes", "collection_notes"),
-    "Collected": ("collected_at", "collected"),
-}
-
+# --------------------------------------------------------------------
+# HTTP helpers
+# --------------------------------------------------------------------
 
 def api_get(path, params=None):
     """GET an Encora API endpoint with the bearer token, return parsed JSON."""
     url = f"{BASE_URL}{path}"
     if params:
-        from urllib.parse import urlencode
         url = f"{url}?{urlencode(params)}"
 
     request = urllib.request.Request(url, headers={
@@ -102,7 +70,6 @@ def api_get(path, params=None):
         "Accept": "application/json",
     })
 
-    # Encora returns rate-limit headers; back off and retry once if we hit them.
     for attempt in range(2):
         try:
             with urllib.request.urlopen(request) as response:
@@ -119,40 +86,136 @@ def api_get(path, params=None):
 
 def fetch_all_pages(path, per_page=500):
     """
-    Collects every record from a paginated endpoint. Handles the two shapes
-    Laravel APIs commonly use (a bare list, or {"data": [...], ...}) and
-    stops once a page comes back short or empty. Adjust if Encora's actual
-    pagination shape (e.g. page tokens, "next" links) turns out different.
+    Walks a Laravel-style paginated endpoint (current_page/last_page/data),
+    which is the shape /api/collection actually returns. Stops once
+    current_page reaches last_page.
     """
     records = []
     page = 1
     while True:
         body = api_get(path, {"per_page": per_page, "page": page})
-        page_records = body["data"] if isinstance(body, dict) and "data" in body else body
-        if not page_records:
-            break
-        records.extend(page_records)
-        if len(page_records) < per_page:
+        records.extend(body["data"])
+        if body["current_page"] >= body["last_page"]:
             break
         page += 1
     return records
 
 
-def map_record(record, field_map):
-    """Turns one Encora JSON record into a dict keyed by our CSV column names."""
-    row = {}
-    for column, candidate_keys in field_map.items():
-        value = ""
-        for key in candidate_keys:
-            if key in record and record[key] not in (None, ""):
-                value = record[key]
-                break
-        # Booleans from the API (e.g. NFT Forever) become blank/TRUE so the
-        # site's truthy check (`if (recording['NFT Forever'])`) works either way.
-        if isinstance(value, bool):
-            value = "TRUE" if value else ""
-        row[column] = value
+# --------------------------------------------------------------------
+# Small shared helpers
+# --------------------------------------------------------------------
+
+def bool_to_csv(value):
+    """The site's checks (e.g. `if (recording['NFT Forever'])`) just test
+    truthiness, so blank = false, "TRUE" = true is enough."""
+    return "TRUE" if value else ""
+
+
+def format_cast(cast_list):
+    """recording.cast is a list of {performer: {name}, character: {name}}.
+    Joined as "Performer as Character; Performer as Character; ..."."""
+    if not cast_list:
+        return ""
+    parts = []
+    for entry in cast_list:
+        performer_name = (entry.get("performer") or {}).get("name", "")
+        character_name = (entry.get("character") or {}).get("name", "")
+        if performer_name and character_name:
+            parts.append(f"{performer_name} as {character_name}")
+        elif performer_name:
+            parts.append(performer_name)
+    return "; ".join(parts)
+
+
+def format_matinee_evening(time_value):
+    return {"matinee": "Matinée", "evening": "Evening"}.get(time_value, "")
+
+
+def format_audio_video(media_type):
+    # metadata.media_type comes back lowercase ("video"/"audio"); the site
+    # requires exactly "Audio" or "Video".
+    return (media_type or "").capitalize()
+
+
+def recording_link(recording_id):
+    return f"https://encora.it/recordings/{recording_id}" if recording_id else ""
+
+
+# --------------------------------------------------------------------
+# Collection mapping - confirmed against a real API response.
+# --------------------------------------------------------------------
+
+def map_collection_record(item):
+    recording = item["recording"]
+    metadata = recording.get("metadata") or {}
+    date = recording.get("date") or {}
+    nft = recording.get("nft") or {}
+
+    row = {
+        "Audio / Video": format_audio_video(metadata.get("media_type")),
+        "Show": recording.get("show", ""),
+        "Tour": recording.get("tour", ""),
+        "Date": (date.get("full_date") or ""),
+        "Matinée / Evening": format_matinee_evening(date.get("time")),
+        "Master": recording.get("master", ""),
+        "Cast": format_cast(recording.get("cast")),
+        "Master Notes": recording.get("master_notes") or "",
+        "Trading Notes": recording.get("notes") or "",
+        "NFT Date": nft.get("nft_date") or "",
+        "NFT Forever": bool_to_csv(nft.get("nft_forever")),
+        "Not For Sale": bool_to_csv(metadata.get("is_nfs")),
+        "Type": metadata.get("recording_type", ""),
+        "Release Format": recording.get("release_format") or "",
+        "Amount Recorded": metadata.get("amount_recorded", ""),
+        "Venue": metadata.get("venue", ""),
+        "City": metadata.get("city", ""),
+        "Link": recording_link(recording.get("id")),
+        # Collection-only columns - these live on the wrapper, not `recording`,
+        # since they're specific to your copy rather than the recording itself.
+        "Gifting Status": metadata.get("gifting_status", ""),
+        "Limited Trade Status": metadata.get("limited_status", ""),
+        "Trader Format": item.get("format") or "",
+        "My Notes": item.get("notes") or "",
+        "Collected": item.get("collected_at") or "",
+    }
     return row
+
+
+# --------------------------------------------------------------------
+# Wants mapping - confirmed against a real /api/wants response. Same
+# nested `recording` shape as collection, wrapped as
+# { recording: {...}, priority, priority_label } instead of the
+# collection wrapper. priority / priority_label are intentionally not
+# written out - no Priority column on the site. No collection-only
+# fields apply here either (no format/notes/collected_at on a want).
+# --------------------------------------------------------------------
+
+def map_want_record(item):
+    recording = item["recording"]
+    metadata = recording.get("metadata") or {}
+    date = recording.get("date") or {}
+    nft = recording.get("nft") or {}
+
+    return {
+        "Audio / Video": format_audio_video(metadata.get("media_type")),
+        "Show": recording.get("show", ""),
+        "Tour": recording.get("tour", ""),
+        "Date": (date.get("full_date") or ""),
+        "Matinée / Evening": format_matinee_evening(date.get("time")),
+        "Master": recording.get("master", ""),
+        "Cast": format_cast(recording.get("cast")),
+        "Master Notes": recording.get("master_notes") or "",
+        "Trading Notes": recording.get("notes") or "",
+        "NFT Date": nft.get("nft_date") or "",
+        "NFT Forever": bool_to_csv(nft.get("nft_forever")),
+        "Not For Sale": bool_to_csv(metadata.get("is_nfs")),
+        "Type": metadata.get("recording_type", ""),
+        "Release Format": recording.get("release_format") or "",
+        "Amount Recorded": metadata.get("amount_recorded", ""),
+        "Venue": metadata.get("venue", ""),
+        "City": metadata.get("city", ""),
+        "Link": recording_link(recording.get("id")),
+    }
 
 
 def write_csv(path, columns, rows):
@@ -169,15 +232,12 @@ def main():
         sys.exit(1)
 
     collection_raw = fetch_all_pages("/api/collection")
-    collection_rows = [
-        {**map_record(r, COMMON_FIELD_MAP), **map_record(r, COLLECTION_FIELD_MAP)}
-        for r in collection_raw
-    ]
+    collection_rows = [map_collection_record(item) for item in collection_raw]
     write_csv("collection.csv", SHARED_COLUMNS + COLLECTION_ONLY_COLUMNS, collection_rows)
 
-    wants_raw = api_get("/api/wants")
-    wants_raw = wants_raw["data"] if isinstance(wants_raw, dict) and "data" in wants_raw else wants_raw
-    wants_rows = [map_record(r, COMMON_FIELD_MAP) for r in wants_raw]
+    wants_body = api_get("/api/wants")
+    wants_raw = wants_body["data"] if isinstance(wants_body, dict) and "data" in wants_body else wants_body
+    wants_rows = [map_want_record(item) for item in wants_raw]
     write_csv("wants.csv", SHARED_COLUMNS, wants_rows)
 
 
