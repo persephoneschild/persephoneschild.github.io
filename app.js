@@ -221,6 +221,18 @@ function recordingField(recording, label, fallback = 'Not listed') {
   return recording[label] || fallback;
 }
 
+// Formats the Date column for display. The sync script writes ISO dates
+// straight from the Encora API (e.g. "2025-06-01"); this turns those into
+// "June 1, 2025" using the same split-based approach as formatIsoDate, so a
+// visitor west of UTC never sees the date shift back a day. Anything that
+// isn't a plain ISO date (e.g. hand-typed text like "June, 2024") is shown
+// exactly as entered, since recordingDateValue's sort already tolerates that.
+function formatRecordingDate(recording) {
+  const raw = recording.Date || '';
+  if (!raw) return 'Not listed';
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? formatIsoDate(raw) : raw;
+}
+
 /**
  * Builds the grid of labelled details shown under a recording's title
  * (Tour, Date, Master, Cast, Notes, NFT date, Trader Format).
@@ -252,7 +264,7 @@ function recordingDetails(recording, includeTraderFormat = true, includeMediaTyp
 
   // The finished HTML. "recording-field-cast" and "recording-field-wide" are
   // styled to span two columns, since cast lists and notes are long.
-  return `<div class="recording-fields">${mediaType}<div class="recording-field"><span>Tour</span><b>${recordingField(recording, 'Tour')}</b></div><div class="recording-field"><span>Date</span><b>${recordingField(recording, 'Date')}</b></div><div class="recording-field"><span>Master</span><b>${recordingField(recording, 'Master')}</b></div><div class="recording-field recording-field-cast"><span>Cast</span><b>${recordingField(recording, 'Cast')}</b></div><div class="recording-field recording-field-wide"><span>Notes</span><b>${notes}</b></div><div class="recording-field"><span>NFT date</span><b>${nft}</b></div>${traderFormat}</div>`;
+  return `<div class="recording-fields">${mediaType}<div class="recording-field"><span>Tour</span><b>${recordingField(recording, 'Tour')}</b></div><div class="recording-field"><span>Date</span><b>${formatRecordingDate(recording)}</b></div><div class="recording-field"><span>Master</span><b>${recordingField(recording, 'Master')}</b></div><div class="recording-field recording-field-cast"><span>Cast</span><b>${recordingField(recording, 'Cast')}</b></div><div class="recording-field recording-field-wide"><span>Notes</span><b>${notes}</b></div><div class="recording-field"><span>NFT date</span><b>${nft}</b></div>${traderFormat}</div>`;
 }
 
 
@@ -422,7 +434,7 @@ function toggleCart(id) {
 // One line of the request that gets copied, in the format promised on the
 // cart page: Show - Tour - Date - Master.
 function requestLine(recording) {
-  return `${recordingTitle(recording)} - ${recordingField(recording, 'Tour')} - ${recordingField(recording, 'Date')} - ${recordingField(recording, 'Master')}`;
+  return `${recordingTitle(recording)} - ${recordingField(recording, 'Tour')} - ${formatRecordingDate(recording)} - ${recordingField(recording, 'Master')}`;
 }
 
 // Redraws the cart page and the little number badge in the header, and keeps
@@ -437,7 +449,7 @@ function renderCart() {
   empty.style.display = state.cart.length ? 'none' : 'block';
 
   items.innerHTML = state.cart.map((recording) =>
-    `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Tour')} / ${recordingField(recording, 'Date')} / ${recordingField(recording, 'Master')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
+    `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Tour')} / ${formatRecordingDate(recording)} / ${recordingField(recording, 'Master')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
 
   // The read-only textarea showing exactly what will be copied.
   document.querySelector('#request-preview').textContent = state.cart.map(requestLine).join('\n');
