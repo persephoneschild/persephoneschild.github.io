@@ -449,9 +449,9 @@ function toggleCart(id) {
 }
 
 // One line of the request that gets copied, in the format promised on the
-// cart page: Show - Tour - Date - Master.
+// cart page: Show - Tour - Date - Master - Encora Link.
 function requestLine(recording) {
-  return `${recordingTitle(recording)} - ${recordingField(recording, 'Tour')} - ${formatRecordingDate(recording)} - ${recordingField(recording, 'Master')}`;
+  return `${recordingTitle(recording)} - ${recordingField(recording, 'Tour')} - ${formatRecordingDate(recording)} - ${recordingField(recording, 'Master')} ${recordingField(recording, 'Encora Link')}`;
 }
 
 // Redraws the cart page and the little number badge in the header, and keeps
