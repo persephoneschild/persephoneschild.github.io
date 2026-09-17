@@ -68,6 +68,11 @@ def api_get(path, params=None):
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
         "Accept": "application/json",
+        # Without this, urllib's default User-Agent is the literal string
+        # "Python-urllib/3.x", which Cloudflare's bot protection commonly
+        # blocklists outright (error 1010 / browser_signature_banned),
+        # independent of whether the API key is valid.
+        "User-Agent": "PersephonesChildCollectionSync/1.0 (+https://github.com/)",
     })
 
     for attempt in range(2):
