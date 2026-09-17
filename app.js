@@ -211,8 +211,13 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 // Turns an ISO date like "2026-09-16" into "September 16, 2026". Parsed by
 // splitting the string rather than with Date.parse/toLocaleDateString, so a
 // visitor west of UTC never sees the date shifted back by a day.
+//
+// The slice(0, 10) takes just the date part, so a full timestamp
+// ("2026-09-16T23:59:49.000000Z", which is what the Encora API returns for
+// collected_at) works too. Without it the day would come out as
+// "16T23:59:49.000000Z" and print as NaN.
 function formatIsoDate(isoDate) {
-  const [year, month, day] = isoDate.split('-').map(Number);
+  const [year, month, day] = isoDate.slice(0, 10).split('-').map(Number);
   return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
 }
 

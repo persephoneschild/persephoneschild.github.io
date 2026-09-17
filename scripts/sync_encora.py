@@ -181,7 +181,10 @@ def map_collection_record(item):
         "Limited Trade Status": metadata.get("limited_status", ""),
         "Trader Format": item.get("format") or "",
         "My Notes": item.get("notes") or "",
-        "Collected": item.get("collected_at") or "",
+        # collected_at comes back as a full timestamp
+        # ("2026-09-16T23:59:49.000000Z"); only the date is used on the site,
+        # so the time is dropped here to keep the CSV readable.
+        "Collected": (item.get("collected_at") or "")[:10],
     }
     return row
 
