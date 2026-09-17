@@ -40,9 +40,9 @@ const COLLECTION_ROUTES = {
   // listed twice across the two video pages or missed at the boundary:
   // firstLetter() < 'i' covers a-h (and anything before "i", e.g. numbers or
   // symbols); >= 'i' covers the rest.
-  'videos-a-c': {
-    title: 'Videos A–C',
-    eyebrow: '01 / Videos A–C',
+  'videos-#-c': {
+    title: 'Videos #–C',
+    eyebrow: '01 / Videos #–C',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -88,7 +88,7 @@ const COLLECTION_ROUTES = {
 // The pages listed on the Videos index page (#videos), in the order they
 // appear there. Every key must exist in COLLECTION_ROUTES above; add a key
 // here when you add a video page, and the card appears automatically.
-const VIDEO_INDEX_ROUTES = ['videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'hadestown'];
+const VIDEO_INDEX_ROUTES = ['videos-#-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'hadestown'];
 
 // The single source of truth for the page:
 //   recordings — every row from collection.csv
@@ -458,10 +458,10 @@ function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
   // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
-  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
+  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'videos-#-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
   // Videos, Hadestown and Audios all share the one collection section.
-  const isCollectionRoute = ['audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z'].includes(validRoute);
+  const isCollectionRoute = ['audios', 'hadestown', 'videos-#-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z'].includes(validRoute);
 
   // Show the matching section, hide the others.
   document.querySelectorAll('.view').forEach((view) =>
