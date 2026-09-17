@@ -66,13 +66,22 @@ const COLLECTION_ROUTES = {
       firstLetter(recording) >= 'i' &&
       firstLetter(recording) < 'n',
   },
-  'videos-n-z': {
-    title: 'Videos N–Z',
-    eyebrow: '02 / Videos N–Z',
+  'videos-n-r': {
+    title: 'Videos N–R',
+    eyebrow: '02 / Videos N–R',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
-      firstLetter(recording) >= 'n',
+      firstLetter(recording) >= 'n' &&
+      firstLetter(recording) < 's',
+  },
+  'videos-s-z': {
+    title: 'Videos S–Z',
+    eyebrow: '02 / Videos S–Z',
+    filter: (recording) =>
+      recording['Audio / Video'] === 'Video' &&
+      recordingTitle(recording).toLowerCase() !== 'hadestown' &&
+      firstLetter(recording) >= 's',
   },
 };
 
@@ -419,10 +428,10 @@ function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
   // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
-  const validRoute = ['home', 'audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-z', 'wants', 'cart'].includes(route) ? route : 'home';
+  const validRoute = ['home', 'audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
   // Videos, Hadestown and Audios all share the one collection section.
-  const isCollectionRoute = ['audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-z'].includes(validRoute);
+  const isCollectionRoute = ['audios', 'hadestown', 'videos-a-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z'].includes(validRoute);
 
   // Show the matching section, hide the others.
   document.querySelectorAll('.view').forEach((view) =>
