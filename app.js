@@ -340,8 +340,14 @@ function renderRecordings() {
   list.innerHTML = recordings.length
     ? recordings.map((recording, index) => {
       const selected = state.cart.some((item) => item._id === recording._id);
-      const titleClass = isNftRestricted(recording) ? ' is-nft' : '';
-      return `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${titleClass}">${recordingTitle(recording)}</strong><label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label></div>${recordingDetails(recording, true, false)}</article>`;
+      const restricted = isNftRestricted(recording);
+      const titleClass = restricted ? ' is-nft' : '';
+      // NFT-restricted recordings (red titles) can't be requested, so they get
+      // no Add checkbox at all — just an empty third column in the row.
+      const addControl = restricted
+        ? ''
+        : `<label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label>`;
+      return `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${titleClass}">${recordingTitle(recording)}</strong>${addControl}</div>${recordingDetails(recording, true, false)}</article>`;
     }).join('')
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
@@ -407,7 +413,7 @@ function renderCart() {
   empty.style.display = state.cart.length ? 'none' : 'block';
 
   items.innerHTML = state.cart.map((recording) =>
-    `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Date')} / ${recordingField(recording, 'Trader Format')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
+    `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Date')} / ${recordingField(recording, 'Master')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
 
   // The read-only textarea showing exactly what will be copied.
   document.querySelector('#request-preview').textContent = state.cart.map(requestLine).join('\n');
