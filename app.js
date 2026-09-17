@@ -413,7 +413,7 @@ function renderCart() {
   empty.style.display = state.cart.length ? 'none' : 'block';
 
   items.innerHTML = state.cart.map((recording) =>
-    `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Date')} / ${recordingField(recording, 'Master')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
+    `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Tour')} / ${recordingField(recording, 'Date')} / ${recordingField(recording, 'Master')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
 
   // The read-only textarea showing exactly what will be copied.
   document.querySelector('#request-preview').textContent = state.cart.map(requestLine).join('\n');
