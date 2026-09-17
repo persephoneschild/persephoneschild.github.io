@@ -26,6 +26,15 @@ api_get() call and no per_page param.
 priority / priority_label (0-5, or -1 for "Trade Requested") are not
 written to wants.csv - the site has no Priority column and doesn't need
 one.
+
+Date precision: `date.full_date` always comes back as a complete
+YYYY-MM-DD, even when Encora doesn't actually know the month or day -
+unknown components default to "01" internally. The real precision lives
+in `date.month_known` / `date.day_known` (and `date.date_variant`, likely
+the source of the "(1)"-style suffixes Encora shows for recordings that
+share an imprecise date). format_date_field() uses those flags so an
+unknown day writes out as "October, 2025" instead of a false-precise
+"2025-10-01" (confirmed against recording 2026829, "Born With Teeth").
 ------------------------------------------------------------------------
 """
 
@@ -146,6 +155,62 @@ def recording_link(recording_id):
     return f"https://encora.it/recordings/{recording_id}" if recording_id else ""
 
 
+MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
+               "July", "August", "September", "October", "November", "December"]
+
+
+def format_date_field(date_obj):
+    """
+    Turns a recording's `date` object into the text written to the Date
+    column, respecting Encora's own month_known/day_known flags instead of
+    trusting full_date blindly.
+
+    full_date always comes back as a complete YYYY-MM-DD - Encora defaults
+    any unknown month/day to "01" internally - so without checking these
+    flags, an "unknown day in October 2025" and a genuine "October 1, 2025"
+    are indistinguishable, and the site would show a false-precise day for
+    the former (e.g. recording 2026829, "Born With Teeth", which Encora
+    itself displays as "October, 2025" with no day at all).
+
+    - day_known and month_known: keep the ISO date as-is. formatRecordingDate
+      in app.js turns this into "October 1, 2025" for display, and that's
+      correct because the day really is known.
+    - month_known but not day_known: write "October, 2025" instead - text
+      app.js already leaves untouched (see formatRecordingDate), and which
+      recordingDateValue already knows how to sort (see README > CSV columns).
+    - neither known: write just the year, e.g. "2025".
+
+    date_variant is appended in parentheses when present - this is very
+    likely the source of the "(1)" / "(2)" suffixes Encora shows to tell
+    apart multiple recordings that share the same imprecise date; it is NOT
+    a day number, so it's kept as opaque text rather than parsed.
+
+    month_known/day_known default to True if Encora ever omits them, so a
+    date object without these flags still round-trips exactly as before.
+    """
+    full_date = date_obj.get("full_date") or ""
+    if not full_date:
+        return ""
+
+    month_known = date_obj.get("month_known", True)
+    day_known = date_obj.get("day_known", True)
+
+    if month_known and day_known:
+        result = full_date
+    else:
+        year = full_date[0:4]
+        if month_known:
+            month_index = int(full_date[5:7]) - 1
+            result = f"{MONTH_NAMES[month_index]}, {year}"
+        else:
+            result = year
+
+    variant = date_obj.get("date_variant")
+    if variant:
+        result = f"{result} ({variant})"
+    return result
+
+
 # --------------------------------------------------------------------
 # Collection mapping - confirmed against a real API response.
 # --------------------------------------------------------------------
@@ -160,7 +225,7 @@ def map_collection_record(item):
         "Audio / Video": format_audio_video(metadata.get("media_type")),
         "Show": recording.get("show", ""),
         "Tour": recording.get("tour", ""),
-        "Date": (date.get("full_date") or ""),
+        "Date": format_date_field(date),
         "Matinée / Evening": format_matinee_evening(date.get("time")),
         "Master": recording.get("master", ""),
         "Cast": format_cast(recording.get("cast")),
@@ -209,7 +274,7 @@ def map_want_record(item):
         "Audio / Video": format_audio_video(metadata.get("media_type")),
         "Show": recording.get("show", ""),
         "Tour": recording.get("tour", ""),
-        "Date": (date.get("full_date") or ""),
+        "Date": format_date_field(date),
         "Matinée / Evening": format_matinee_evening(date.get("time")),
         "Master": recording.get("master", ""),
         "Cast": format_cast(recording.get("cast")),
