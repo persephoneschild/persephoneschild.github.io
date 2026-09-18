@@ -135,7 +135,7 @@ def format_cast(cast_list):
         performer_name = (entry.get("performer") or {}).get("name", "")
         character_name = (entry.get("character") or {}).get("name", "")
         if performer_name and character_name:
-            parts.append(f"{performer_name} as {character_name}")
+            parts.append(f"{performer_name} ({character_name})")
         elif performer_name:
             parts.append(performer_name)
     return "; ".join(parts)
@@ -164,26 +164,6 @@ def format_date_field(date_obj):
     Turns a recording's `date` object into the text written to the Date
     column, respecting Encora's own month_known/day_known flags instead of
     trusting full_date blindly.
-
-    full_date always comes back as a complete YYYY-MM-DD - Encora defaults
-    any unknown month/day to "01" internally - so without checking these
-    flags, an "unknown day in October 2025" and a genuine "October 1, 2025"
-    are indistinguishable, and the site would show a false-precise day for
-    the former (e.g. recording 2026829, "Born With Teeth", which Encora
-    itself displays as "October, 2025" with no day at all).
-
-    - day_known and month_known: keep the ISO date as-is. formatRecordingDate
-      in app.js turns this into "October 1, 2025" for display, and that's
-      correct because the day really is known.
-    - month_known but not day_known: write "October, 2025" instead - text
-      app.js already leaves untouched (see formatRecordingDate), and which
-      recordingDateValue already knows how to sort (see README > CSV columns).
-    - neither known: write just the year, e.g. "2025".
-
-    date_variant is appended in parentheses when present - this is very
-    likely the source of the "(1)" / "(2)" suffixes Encora shows to tell
-    apart multiple recordings that share the same imprecise date; it is NOT
-    a day number, so it's kept as opaque text rather than parsed.
 
     month_known/day_known default to True if Encora ever omits them, so a
     date object without these flags still round-trips exactly as before.
