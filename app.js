@@ -39,7 +39,7 @@ const COLLECTION_ROUTES = {
   // New in that shows recordings collected in the last 7 days
   'New-In': {
     title: 'New In',
-    eyebrow: 'New In',
+    eyebrow: 'Added in the last 7 days',
     filter: (recording) => {
       const collectedDate = new Date(recording.Collected);
       const sevenDaysAgo = new Date();
