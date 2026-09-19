@@ -41,54 +41,54 @@ const COLLECTION_ROUTES = {
   // firstLetter() < 'i' covers a-h (and anything before "i", e.g. numbers or
   // symbols); >= 'i' covers the rest.
   'videos-#-c': {
-    title: 'Videos #–C',
-    eyebrow: '01 / Videos #–C',
+    title: 'Videos #–B',
+    eyebrow: '01 / Videos #–B',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
-      firstLetter(recording) < 'd',
+      firstLetter(recording) < 'c',
   },
   'videos-d-h': {
-    title: 'Videos D–H',
-    eyebrow: '02 / Videos D–H',
+    title: 'Videos C–G',
+    eyebrow: '02 / Videos C–G',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
-      firstLetter(recording) >= 'd' &&
-      firstLetter(recording) < 'i',
+      firstLetter(recording) >= 'c' &&
+      firstLetter(recording) < 'h',
   },
   'videos-i-m': {
-    title: 'Videos I–M',
-    eyebrow: '03 / Videos I–M',
+    title: 'Videos H–L',
+    eyebrow: '03 / Videos H–L',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
-      firstLetter(recording) >= 'i' &&
-      firstLetter(recording) < 'n',
+      firstLetter(recording) >= 'h' &&
+      firstLetter(recording) < 'm',
   },
   'videos-n-r': {
-    title: 'Videos N–R',
-    eyebrow: '04 / Videos N–R',
+    title: 'Videos M–P',
+    eyebrow: '04 / Videos M–P',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
-      firstLetter(recording) >= 'n' &&
-      firstLetter(recording) < 's',
+      firstLetter(recording) >= 'm' &&
+      firstLetter(recording) < 'r',
   },
   'videos-s-z': {
-    title: 'Videos S–Z',
-    eyebrow: '05 / Videos S–Z',
+    title: 'Videos R–Z',
+    eyebrow: '05 / Videos R–Z',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
-      firstLetter(recording) >= 's',
+      firstLetter(recording) >= 'r',
   },
 };
 
 // The pages listed on the Videos index page (#videos), in the order they
 // appear there. Every key must exist in COLLECTION_ROUTES above; add a key
 // here when you add a video page, and the card appears automatically.
-const VIDEO_INDEX_ROUTES = ['videos-#-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'hadestown'];
+const VIDEO_INDEX_ROUTES = ['videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z', 'hadestown'];
 
 // The single source of truth for the page:
 //   recordings — every row from collection.csv
@@ -487,10 +487,10 @@ function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
   // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
-  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'videos-#-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
+  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
   // Videos, Hadestown and Audios all share the one collection section.
-  const isCollectionRoute = ['audios', 'hadestown', 'videos-#-c', 'videos-d-h', 'videos-i-m', 'videos-n-r', 'videos-s-z'].includes(validRoute);
+  const isCollectionRoute = ['audios', 'hadestown', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z'].includes(validRoute);
 
   // Show the matching section, hide the others.
   document.querySelectorAll('.view').forEach((view) =>
