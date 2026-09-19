@@ -36,10 +36,18 @@ const COLLECTION_ROUTES = {
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() === 'hadestown',
   },
-  // All other videos, split alphabetically into two pages so nothing is
-  // listed twice across the two video pages or missed at the boundary:
-  // firstLetter() < 'i' covers a-h (and anything before "i", e.g. numbers or
-  // symbols); >= 'i' covers the rest.
+  // New in that shows videos collected in the last 7 days
+  'New In': {
+    title: 'New In',
+    eyebrow: 'New In',
+    filter: (recording) => {
+      const collectedDate = new Date(recording.Collected);
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      return collectedDate >= sevenDaysAgo;
+    },
+  },
+  // All other videos, split alphabetically into pages 
   'videos-#-c': {
     title: 'Videos #–B',
     eyebrow: '01 / Videos #–B',
@@ -83,12 +91,13 @@ const COLLECTION_ROUTES = {
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 'r',
   },
+  
 };
 
 // The pages listed on the Videos index page (#videos), in the order they
 // appear there. Every key must exist in COLLECTION_ROUTES above; add a key
 // here when you add a video page, and the card appears automatically.
-const VIDEO_INDEX_ROUTES = ['videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z', 'hadestown'];
+const VIDEO_INDEX_ROUTES = ['New In', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z', 'hadestown'];
 
 // The single source of truth for the page:
 //   recordings — every row from collection.csv
@@ -487,10 +496,10 @@ function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
   // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
-  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z', 'wants', 'cart'].includes(route) ? route : 'home';
+  const validRoute = ['home', 'videos', 'audios', 'hadestown', 'New In', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
   // Videos, Hadestown and Audios all share the one collection section.
-  const isCollectionRoute = ['audios', 'hadestown', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z'].includes(validRoute);
+  const isCollectionRoute = ['audios', 'hadestown', 'New In', 'videos-#-b', 'videos-c-g', 'videos-h-l', 'videos-m-p', 'videos-r-z'].includes(validRoute);
 
   // Show the matching section, hide the others.
   document.querySelectorAll('.view').forEach((view) =>
