@@ -2,7 +2,7 @@
 <!--
   PersephonesChild Collection - index.html
 
-  The whole site is this one page. Each <section class="view"> below is one
+  Each <section class="view"> below is one
   "page" (Home, Collection, Wants, Cart); app.js shows one at a time depending
   on the # in the address bar, so nothing ever reloads.
 
@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="styles.css">
   <!--
     Site-specific overrides. This block loads AFTER styles.css, so every rule
-    here beats the matching rule in that file. This is where the dark blue
-    colour scheme and the current recording-row layout actually come from.
+    here beats the matching rule in that file. This is where the 
+    colour scheme and the recording-row layout actually come from.
   -->
   <style>
     /* The dark blue palette, replacing the cream/olive defaults in styles.css. */
@@ -259,13 +259,12 @@
               <span class="empty-number">00</span>
               <h3>Your cart is quiet.</h3>
               <p>Browse the collection and add recordings you would like to request.</p>
-              <a href="#audios" class="text-link">Browse collection <span>→</span></a>
+              <a href="#videos" class="text-link">Browse collection <span>→</span></a>
             </div>
           </div>
           <aside class="checkout-panel">
             <p class="eyebrow">Request details</p>
             <h3>Copy your request</h3>
-            <p>Copy the selected recordings and send the list in an email.</p>
             <textarea id="request-preview" class="request-preview" aria-label="Selected recording request" readonly></textarea>
             <button class="button button-dark full-width" id="copy-request-button" type="button">Copy request <span>⧉</span></button>
             <small class="form-hint" id="copy-status">Format: Show - Tour - Date - Master - Encora Link</small>

@@ -8,10 +8,7 @@
      4. Draws the recording lists, the wants list, and the cart onto the page.
      5. Handles routing (#home, #videos, #hadestown, #audios, #wants, #cart).
 
-   There is no server and no database. Everything runs in the visitor's
-   browser, and nothing about the visitor is ever stored or sent anywhere.
    ============================================================================ */
-
 
 /* ---------------------------------------------------------------------------
    1. CONFIGURATION
@@ -28,10 +25,10 @@ const COLLECTION_ROUTES = {
     eyebrow: '07 / Audios',
     filter: (recording) => recording['Audio / Video'] === 'Audio',
   },
-  // Videos whose show name is exactly "Hadestown" — your dedicated page.
+  // Videos whose show name is exactly "Hadestown".
   hadestown: {
     title: 'Hadestown',
-    eyebrow: '06 / Hadestown',
+    eyebrow: '07 / Hadestown',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() === 'hadestown',
