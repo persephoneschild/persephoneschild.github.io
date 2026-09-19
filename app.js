@@ -90,7 +90,7 @@ const COLLECTION_ROUTES = {
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 'n' &&
-      firstLetter(recording) < 'r',
+      firstLetter(recording) < 's',
   },
   'videos-s-z': {
     title: 'Videos S–Z',
@@ -106,7 +106,7 @@ const COLLECTION_ROUTES = {
 // The pages listed on the Videos index page (#videos), in the order they
 // appear there. Every key must exist in COLLECTION_ROUTES above; add a key
 // here when you add a video page, and the card appears automatically.
-const VIDEO_INDEX_ROUTES = ['New-In', 'videos-#-b', 'videos-c-f', 'videos-g-k', 'videos-l-n', 'videos-o-t', 'videos-u-z', 'hadestown'];
+const VIDEO_INDEX_ROUTES = ['New-In', 'videos-#-b', 'videos-c-e', 'videos-f-j', 'videos-k-m', 'videos-n-r', 'videos-s-z', 'hadestown'];
 
 // The single source of truth for the page:
 //   recordings — every row from collection.csv
