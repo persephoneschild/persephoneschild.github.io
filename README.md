@@ -25,7 +25,6 @@ Then open `http://localhost:8000`.
 ## Customize
 
 - **Recordings and wants** — edit `collection.csv` / `wants.csv` directly. Keep the column names exactly as they are (see below); the code matches columns by name, not position, so a renamed or misspelled header makes that column show up empty.
-- **Contact details** — there's no config variable for this anymore. Search `index.html` for `misiatrade@gmail.com` (it appears twice: once in the Contact block on the home page, once in the footer) and replace both with your own address, plus the Discord handle above it if relevant.
 - **Trading rules text** — also on the home page in `index.html`, inside the `intro-band` div. It's plain `<li>` bullets, safe to rewrite freely.
 - **Colors** — `styles.css` defines the base palette as CSS variables at the top (`--ink`, `--muted`, `--paper`, `--line`, `--accent`, `--rust`, `--white`). `index.html`'s `<style>` block redefines the same variables with the dark blue values actually in use — change them there, not in `styles.css`, or your edit will be silently overridden.
 - **Adding a collection page** — see [Adding a page](#adding-a-page) below.
@@ -45,32 +44,11 @@ A few of these drive site behavior directly, so changing their *values* (not the
 - `Show` is the title used for sorting, searching, and the Hadestown page filter (`recordingTitle()` in `app.js` reads this column).
 - `Date` is parsed for the date-sort options; formats like `June, 2024` or `September 13, 2026` work, anything unparseable just sorts to the end.
 
-## Publish
-
-Create a GitHub repository, push these files to its default branch, then enable GitHub Pages from **Settings > Pages**, choosing the branch root as the source.
-
-The checkout uses the visitor's default email app through `mailto:`. A real server-side automated email requires a form/email service or backend; the static site intentionally stores no visitor information.
-
-## Pages
-
-The site has a Home page, a Wants page, a Cart, and the collection pages themselves:
-
-| Page | Hash | What's on it |
-| --- | --- | --- |
-| Videos | `#videos` | An index page: one card per video page below, each with its recording count. No recordings of its own. |
-| Videos A–C / D–H / I–M / N–R / S–Z | `#videos-a-c` … `#videos-s-z` | Every video except Hadestown, split alphabetically by title. |
-| Hadestown | `#hadestown` | Videos whose `Show` is exactly `Hadestown`. |
-| Audios | `#audios` | Everything marked `Audio`. |
-
-All of these except `#videos` share one section in `index.html` (`data-view="collection"`) — the heading, list and result count are swapped out by `app.js` depending on the hash. `#videos` has its own section (`data-view="videos"`) because it shows links rather than recordings.
-
 ## NFT-restricted recordings
 
 `isNftRestricted()` in `app.js` treats a recording as restricted when `NFT Forever` has a value, or when `NFT Date` is a date that hasn't passed yet. Restricted recordings show their title in red (`--nft`) and get **no Add checkbox**, so they can't be put in the cart. Once an `NFT Date` is in the past the restriction lifts on its own — no editing needed.
 
 ## Adding a page
-
-Here's the full pattern. There are four places to edit, and it's the same four every time.
 
 Each collection page is one entry in `COLLECTION_ROUTES` at the top of `app.js`. A route is just three things: a key, some heading text, and a `filter` — a test that runs against every row of `collection.csv`. Rows that pass appear on that page. Everything else (search, sorting, the checkboxes, the cart) works automatically.
 
