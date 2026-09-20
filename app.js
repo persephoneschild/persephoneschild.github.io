@@ -109,7 +109,11 @@ const VIDEO_INDEX_ROUTES = ['New-In', 'videos-#-b', 'videos-c-e', 'videos-f-i', 
 //   recordings — every row from collection.csv
 //   wants      — every row from wants.csv
 //   cart       — the recordings the visitor has ticked
-const state = { recordings: [], wants: [], cart: [] };
+//   openGroups — which show groups are currently unfolded, keyed by
+//                "recordings:Show Name" or "wants:Show Name" so the two
+//                lists don't share state. Re-read on every render so a
+//                group stays open across re-renders (e.g. ticking Add).
+const state = { recordings: [], wants: [], cart: [], openGroups: new Set() };
 
 
 /* ---------------------------------------------------------------------------
@@ -397,14 +401,17 @@ function groupByShow(items) {
  * both the collection pages and the Wants page: one <details> per Show, with
  * every recording of that show folded away inside until it's clicked open.
  * Every group starts closed, even a show with just one recording, so the
- * list is consistent and nothing unfolds until you click it.
+ * list is consistent and nothing unfolds until you click it. Once opened, a
+ * group stays open across re-renders (see state.openGroups / trackOpenGroups).
  *
- * addable — true on the collection pages (each recording gets an Add
+ * scope     — "recordings" or "wants", so the two lists' open/closed state
+ *             (state.openGroups) never bleeds into each other.
+ * addable   — true on the collection pages (each recording gets an Add
  *           checkbox); false on Wants (nothing to add to the cart).
  * includeTraderFormat / includeMediaType — passed straight through to
  *           recordingDetails(), same meaning as everywhere else it's used.
  */
-function renderShowGroups(items, { addable, includeTraderFormat, includeMediaType }) {
+function renderShowGroups(items, { scope, addable, includeTraderFormat, includeMediaType }) {
   const groups = groupByShow(items);
 
   return groups.map((group, groupIndex) => {
@@ -423,8 +430,27 @@ function renderShowGroups(items, { addable, includeTraderFormat, includeMediaTyp
       return `<div class="recording-subrow"><div class="recording-row-top"><span class="recording-index">&ndash;</span><strong class="recording-title${titleClass}">${subtitle}</strong>${addControl}</div>${recordingDetails(recording, includeTraderFormat, includeMediaType)}</div>`;
     }).join('');
 
-    return `<details class="recording-row show-group"><summary class="recording-row-top show-group-summary"><span class="recording-index">${String(groupIndex + 1).padStart(2, '0')}</span><strong class="recording-title">${group.title}</strong><span class="show-group-meta">${formatCount(group.items.length, 'recording')}</span></summary><div class="show-group-body">${recordingsHtml}</div></details>`;
+    // Restores whatever open/closed state this group had before the list was
+    // last rebuilt (e.g. by ticking an Add checkbox), so opening a show to
+    // browse it doesn't get undone by an unrelated re-render.
+    const openAttribute = state.openGroups.has(`${scope}:${group.title}`) ? ' open' : '';
+
+    return `<details class="recording-row show-group"${openAttribute}><summary class="recording-row-top show-group-summary"><span class="recording-index">${String(groupIndex + 1).padStart(2, '0')}</span><strong class="recording-title">${group.title}</strong><span class="show-group-meta">${formatCount(group.items.length, 'recording')}</span></summary><div class="show-group-body">${recordingsHtml}</div></details>`;
   }).join('');
+}
+
+// Wires up every .show-group in `list` so opening or closing it is remembered
+// in state.openGroups (under the given scope), and re-attaches on every
+// re-render since the elements themselves are recreated each time.
+function trackOpenGroups(list, scope) {
+  list.querySelectorAll('.show-group').forEach((details) => {
+    const title = details.querySelector('.show-group-summary .recording-title').textContent;
+    const key = `${scope}:${title}`;
+    details.addEventListener('toggle', () => {
+      if (details.open) state.openGroups.add(key);
+      else state.openGroups.delete(key);
+    });
+  });
 }
 
 /**
@@ -463,13 +489,16 @@ function renderRecordings() {
   // state if nothing matched. Checkboxes are pre-ticked if that recording is
   // already in the cart, so the ticks survive switching pages.
   list.innerHTML = recordings.length
-    ? renderShowGroups(recordings, { addable: true, includeTraderFormat: true, includeMediaType: false })
+    ? renderShowGroups(recordings, { scope: 'recordings', addable: true, includeTraderFormat: true, includeMediaType: false })
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
-  // The rows were only just created, so their click handlers are attached now.
-  // Each checkbox remembers its recording in a data-recording-id attribute.
+  // The rows were only just created, so their click/toggle handlers are
+  // attached now. Each checkbox remembers its recording in a
+  // data-recording-id attribute; each show group's open/closed state is
+  // remembered in state.openGroups so it survives the next re-render.
   list.querySelectorAll('.recording-check').forEach((checkbox) =>
     checkbox.addEventListener('change', () => toggleCart(checkbox.dataset.recordingId)));
+  trackOpenGroups(list, 'recordings');
 }
 
 /**
@@ -491,9 +520,11 @@ function renderWants() {
   // through to recordingDetails: no Trader Format, but do show whether each
   // want is audio or video. addable: false, since wants have nothing to add
   // to the cart.
-  document.querySelector('#wants-list').innerHTML = wants.length
-    ? renderShowGroups(wants, { addable: false, includeTraderFormat: false, includeMediaType: true })
+  const wantsList = document.querySelector('#wants-list');
+  wantsList.innerHTML = wants.length
+    ? renderShowGroups(wants, { scope: 'wants', addable: false, includeTraderFormat: false, includeMediaType: true })
     : '<div class="empty-state"><h3>No wants found.</h3><p>Try another title, format, or keyword.</p></div>';
+  trackOpenGroups(wantsList, 'wants');
 }
 
 
