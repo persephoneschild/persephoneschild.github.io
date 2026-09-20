@@ -144,7 +144,13 @@ kbd{font:10px 'DM Mono';color:var(--muted)}
    with a details grid underneath, so the column layout here is overridden.
    ------------------------------------------------------------------------- */
 .recording-row{display:grid;grid-template-columns:60px 1.4fr 1fr 100px 110px;align-items:center;min-height:89px;border-bottom:1px solid var(--line);gap:18px}
-.recording-row:hover{background:rgba(216,229,83,.12)}
+/* Hover highlight lives on the summary line (a closed/open show heading) and
+   on each individual recording inside an opened show, instead of on the
+   whole .recording-row container - that container wraps the entire show
+   group (summary + every unfolded recording), so hovering it highlighted
+   everything inside an open group at once rather than just the row under
+   the cursor. */
+.show-group-summary:hover,.recording-subrow:hover{background:rgba(216,229,83,.12)}
 .recording-index{color:var(--rust);font:10px 'DM Mono'}
 .recording-title{font-size:17px;font-weight:600}
 

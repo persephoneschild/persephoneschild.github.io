@@ -414,13 +414,22 @@ function groupByShow(items) {
 function renderShowGroups(items, { scope, addable, includeTraderFormat, includeMediaType }) {
   const groups = groupByShow(items);
 
+  // Inside a fold, recordings are always ordered oldest-to-newest by their
+  // Date column, regardless of whatever sort is chosen for the page overall
+  // (that sort only decides which order the show groups themselves appear
+  // in). Unparseable/missing dates sort last, same rule as everywhere else.
+  groups.forEach((group) => {
+    group.items.sort((a, b) => recordingDateValue(a) - recordingDateValue(b));
+  });
+
   return groups.map((group, groupIndex) => {
     const recordingsHtml = group.items.map((recording) => {
       const restricted = isNftRestricted(recording);
       const titleClass = restricted ? ' is-nft' : '';
-      // Inside an opened show, each recording is told apart by Tour and Date
-      // rather than repeating the Show name, which is already the heading.
-      const subtitle = `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)}`;
+      // Inside an opened show, each recording is told apart by Tour, Date and
+      // Master rather than repeating the Show name, which is already the
+      // heading.
+      const subtitle = `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`;
       const addControl = addable && !restricted
         ? (() => {
           const selected = state.cart.some((item) => item._id === recording._id);
