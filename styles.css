@@ -150,7 +150,7 @@ kbd{font:10px 'DM Mono';color:var(--muted)}
    group (summary + every unfolded recording), so hovering it highlighted
    everything inside an open group at once rather than just the row under
    the cursor. */
-.show-group-summary:hover,.recording-subrow:hover{background:rgba(216,229,83,.12)}
+.show-group-summary:hover,.recording-subrow:hover{background:rgba(119, 83, 229, 0.12)}
 .recording-index{color:var(--rust);font:10px 'DM Mono'}
 .recording-title{font-size:17px;font-weight:600}
 
