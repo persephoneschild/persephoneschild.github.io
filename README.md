@@ -41,7 +41,7 @@ Used by both:
 
 A few of these drive site behavior directly, so changing their *values* (not the column names) has visible effects:
 - `Audio / Video` must be exactly `Audio` or `Video` — it's what puts a recording on the Audios or Videos page.
-- `Show` is the title used for sorting, searching, and the Hadestown page filter (`recordingTitle()` in `app.js` reads this column).
+- `Show` is the title used for sorting, searching, grouping, and the Hadestown page filter (`recordingTitle()` in `app.js` reads this column). Recordings and wants with the same `Show` are grouped together under one collapsible row, closed by default — click the show name to unfold it.
 - `Date` is parsed for the date-sort options; formats like `June, 2024` or `September 13, 2026` work, anything unparseable just sorts to the end.
 
 ## NFT-restricted recordings

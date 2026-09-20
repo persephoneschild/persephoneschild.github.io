@@ -372,6 +372,62 @@ function renderVideoIndex() {
 }
 
 /**
+ * Groups an already filtered/sorted list of recordings (or wants) by Show
+ * title, preserving the order the items already come in — so a group lands
+ * wherever its first recording would have sorted. Returns an array of
+ * { title, items } groups, one per distinct Show.
+ */
+function groupByShow(items) {
+  const groups = [];
+  const indexByTitle = new Map();
+  items.forEach((item) => {
+    const title = recordingTitle(item);
+    if (!indexByTitle.has(title)) {
+      indexByTitle.set(title, groups.length);
+      groups.push({ title, items: [item] });
+    } else {
+      groups[indexByTitle.get(title)].items.push(item);
+    }
+  });
+  return groups;
+}
+
+/**
+ * Turns a list of recordings/wants into the grouped, collapsible HTML used by
+ * both the collection pages and the Wants page: one <details> per Show, with
+ * every recording of that show folded away inside until it's clicked open.
+ * Every group starts closed, even a show with just one recording, so the
+ * list is consistent and nothing unfolds until you click it.
+ *
+ * addable — true on the collection pages (each recording gets an Add
+ *           checkbox); false on Wants (nothing to add to the cart).
+ * includeTraderFormat / includeMediaType — passed straight through to
+ *           recordingDetails(), same meaning as everywhere else it's used.
+ */
+function renderShowGroups(items, { addable, includeTraderFormat, includeMediaType }) {
+  const groups = groupByShow(items);
+
+  return groups.map((group, groupIndex) => {
+    const recordingsHtml = group.items.map((recording) => {
+      const restricted = isNftRestricted(recording);
+      const titleClass = restricted ? ' is-nft' : '';
+      // Inside an opened show, each recording is told apart by Tour and Date
+      // rather than repeating the Show name, which is already the heading.
+      const subtitle = `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)}`;
+      const addControl = addable && !restricted
+        ? (() => {
+          const selected = state.cart.some((item) => item._id === recording._id);
+          return `<label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label>`;
+        })()
+        : '';
+      return `<div class="recording-subrow"><div class="recording-row-top"><span class="recording-index">&ndash;</span><strong class="recording-title${titleClass}">${subtitle}</strong>${addControl}</div>${recordingDetails(recording, includeTraderFormat, includeMediaType)}</div>`;
+    }).join('');
+
+    return `<details class="recording-row show-group"><summary class="recording-row-top show-group-summary"><span class="recording-index">${String(groupIndex + 1).padStart(2, '0')}</span><strong class="recording-title">${group.title}</strong><span class="show-group-meta">${formatCount(group.items.length, 'recording')}</span></summary><div class="show-group-body">${recordingsHtml}</div></details>`;
+  }).join('');
+}
+
+/**
  * Draws the collection list for whichever page is currently open, applying the
  * search box and the sort dropdown. Called again on every keystroke in search.
  */
@@ -402,21 +458,12 @@ function renderRecordings() {
 
   document.querySelector('#collection-result-count').textContent = formatCount(recordings.length, 'recording');
 
-  // Build one <article> per recording — or an empty state if nothing matched.
-  // The checkbox is pre-ticked if that recording is already in the cart, so the
-  // ticks survive switching pages.
+  // Recordings are grouped by Show into collapsible <details> — same show,
+  // different Tour/Date, folded together until clicked open — or an empty
+  // state if nothing matched. Checkboxes are pre-ticked if that recording is
+  // already in the cart, so the ticks survive switching pages.
   list.innerHTML = recordings.length
-    ? recordings.map((recording, index) => {
-      const selected = state.cart.some((item) => item._id === recording._id);
-      const restricted = isNftRestricted(recording);
-      const titleClass = restricted ? ' is-nft' : '';
-      // NFT-restricted recordings (red titles) can't be requested, so they get
-      // no Add checkbox at all — just an empty third column in the row.
-      const addControl = restricted
-        ? ''
-        : `<label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label>`;
-      return `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${titleClass}">${recordingTitle(recording)}</strong>${addControl}</div>${recordingDetails(recording, true, false)}</article>`;
-    }).join('')
+    ? renderShowGroups(recordings, { addable: true, includeTraderFormat: true, includeMediaType: false })
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
   // The rows were only just created, so their click handlers are attached now.
@@ -440,10 +487,12 @@ function renderWants() {
 
   document.querySelector('#wants-result-count').textContent = formatCount(wants.length, 'want');
 
-  // Note the flags passed to recordingDetails: no Trader Format, but do show
-  // whether each want is audio or video.
+  // Grouped by Show, same as the collection pages. Note the flags passed
+  // through to recordingDetails: no Trader Format, but do show whether each
+  // want is audio or video. addable: false, since wants have nothing to add
+  // to the cart.
   document.querySelector('#wants-list').innerHTML = wants.length
-    ? wants.map((want, index) => `<article class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${isNftRestricted(want) ? ' is-nft' : ''}">${recordingTitle(want)}</strong></div>${recordingDetails(want, false, true)}</article>`).join('')
+    ? renderShowGroups(wants, { addable: false, includeTraderFormat: false, includeMediaType: true })
     : '<div class="empty-state"><h3>No wants found.</h3><p>Try another title, format, or keyword.</p></div>';
 }
 

@@ -68,6 +68,27 @@
     /* The "Add" checkbox at the right of each recording row. */
     .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'DM Mono', monospace; cursor: pointer; }
     .recording-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+    /* Show groups: recordings.csv/wants.csv rows sharing a Show are folded
+       together under one <details>, closed by default so the collection reads
+       as one line per show. A show with only one recording is rendered
+       already open (see app.js), since there's nothing to tuck away there. */
+    .show-group-summary { list-style: none; cursor: pointer; }
+    .show-group-summary::-webkit-details-marker { display: none; }
+    /* Count + chevron on the right of the show name, in place of the Add
+       checkbox column used on a plain (ungrouped) row. */
+    .show-group-meta { justify-self: end; display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+    .show-group-meta::after { content: '⌄'; color: var(--accent); font-size: 13px; transition: transform .2s; }
+    .show-group[open] > .show-group-summary .show-group-meta::after { transform: rotate(180deg); }
+    .show-group-summary:hover .recording-title { color: var(--accent); }
+    /* The recordings inside an opened show: one .recording-subrow per Tour/
+       Date, each with its own details grid and (on the collection pages) its
+       own Add checkbox, separated by hairlines instead of the full row gap
+       used between shows. */
+    .show-group-body { margin-top: 18px; }
+    .recording-subrow { padding: 16px 0; border-top: 1px dashed var(--line); }
+    .recording-subrow:first-child { border-top: 0; padding-top: 0; }
+    .recording-subrow .recording-title { font-size: 14px; font-weight: 500; color: var(--muted); }
+    .recording-subrow .recording-title.is-nft { color: var(--nft); }
     /* Making the result-meta dropdowns readable against the dark background. */
     .result-meta select { background: #fff; color: #000; }
     .result-meta select:focus { background: #000; color: #fff; }
