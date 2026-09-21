@@ -432,6 +432,26 @@ function groupByCollectedDate(items) {
 }
 
 /**
+ * Decides how renderShowGroups() should group a page's results.
+ *
+ * An explicit `explicitGroupBy` (currently only New In's "collected") always
+ * wins, since that's a deliberate choice about how that page works — it
+ * shouldn't change based on what happens to be in the results today.
+ *
+ * Otherwise, grouping by Show only makes sense when there's more than one
+ * Show on the page: a single-show page (Hadestown today, but this works for
+ * any page that ends up that way, not just that one route) would just put
+ * everything under one pointless fold you have to open before seeing
+ * anything. So with exactly one distinct Show among the results, this
+ * returns "none" instead of "show".
+ */
+function chooseGroupBy(items, explicitGroupBy) {
+  if (explicitGroupBy) return explicitGroupBy;
+  const distinctShows = new Set(items.map(recordingTitle));
+  return distinctShows.size === 1 ? 'none' : 'show';
+}
+
+/**
  * Turns a list of recordings/wants into the grouped, collapsible HTML used by
  * both the collection pages and the Wants page: one <details> per Show, with
  * every recording of that show folded away inside until it's clicked open.
@@ -445,13 +465,36 @@ function groupByCollectedDate(items) {
  *           checkbox); false on Wants (nothing to add to the cart).
  * includeTraderFormat / includeMediaType — passed straight through to
  *           recordingDetails(), same meaning as everywhere else it's used.
- * groupBy   — "show" (default) groups by Show, newest-collected-day-agnostic,
- *           and folds are ordered oldest-to-newest by the recording's own
- *           Date. "collected" (used by New In) groups by the day each
- *           recording was Collected, newest day first, and folds are ordered
- *           A–Z by title since everything in a fold shares one day.
+ * groupBy   — "show" (default) groups by Show, and folds are ordered
+ *           oldest-to-newest by the recording's own Date. "collected" (used
+ *           by New In) groups by the day each recording was Collected,
+ *           newest day first, folds ordered A–Z by title since everything in
+ *           a fold shares one day. "none" (used automatically whenever a
+ *           page's results are all the same Show — see chooseGroupBy —
+ *           since grouping by Show is pointless when there's only one)
+ *           skips grouping/folding entirely: every recording is its own
+ *           always-open row, in whatever order `items` already comes in.
  */
 function renderShowGroups(items, { scope, addable, includeTraderFormat, includeMediaType, groupBy = 'show' }) {
+  if (groupBy === 'none') {
+    return items.map((recording, index) => {
+      const restricted = isNftRestricted(recording);
+      const titleClass = restricted ? ' is-nft' : '';
+      const subtitle = `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`;
+      const addControl = addable && !restricted
+        ? (() => {
+          const selected = state.cart.some((item) => item._id === recording._id);
+          return `<label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label>`;
+        })()
+        : '';
+      // Reuses .recording-row/.recording-row-top (the same classes a show
+      // group's summary line uses) rather than .recording-subrow, so a
+      // standalone row keeps the normal bold title size instead of the
+      // smaller, muted style meant for rows nested inside an opened show.
+      return `<div class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${titleClass}">${subtitle}</strong>${addControl}</div>${recordingDetails(recording, includeTraderFormat, includeMediaType)}</div>`;
+    }).join('');
+  }
+
   const groupedByCollectedDate = groupBy === 'collected';
   const groups = groupedByCollectedDate ? groupByCollectedDate(items) : groupByShow(items);
 
@@ -542,11 +585,13 @@ function renderRecordings() {
   document.querySelector('#collection-result-count').textContent = formatCount(recordings.length, 'recording');
 
   // Recordings are grouped by Show into collapsible <details> — same show,
-  // different Tour/Date, folded together until clicked open — or an empty
-  // state if nothing matched. Checkboxes are pre-ticked if that recording is
-  // already in the cart, so the ticks survive switching pages.
+  // different Tour/Date, folded together until clicked open — or, on a page
+  // where every result is the same Show (see chooseGroupBy), a flat list
+  // with nothing to click open. Or an empty state if nothing matched.
+  // Checkboxes are pre-ticked if that recording is already in the cart, so
+  // the ticks survive switching pages.
   list.innerHTML = recordings.length
-    ? renderShowGroups(recordings, { scope: 'recordings', addable: true, includeTraderFormat: true, includeMediaType: false, groupBy: route.groupBy })
+    ? renderShowGroups(recordings, { scope: 'recordings', addable: true, includeTraderFormat: true, includeMediaType: false, groupBy: chooseGroupBy(recordings, route.groupBy) })
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
   // The rows were only just created, so their click/toggle handlers are
@@ -573,13 +618,15 @@ function renderWants() {
 
   document.querySelector('#wants-result-count').textContent = formatCount(wants.length, 'want');
 
-  // Grouped by Show, same as the collection pages. Note the flags passed
-  // through to recordingDetails: no Trader Format, but do show whether each
-  // want is audio or video. addable: false, since wants have nothing to add
-  // to the cart.
+  // Grouped by Show, same as the collection pages (and, same as the
+  // collection pages, left ungrouped if a search has narrowed the results
+  // down to one Show — see chooseGroupBy). Note the flags passed through to
+  // recordingDetails: no Trader Format, but do show whether each want is
+  // audio or video. addable: false, since wants have nothing to add to the
+  // cart.
   const wantsList = document.querySelector('#wants-list');
   wantsList.innerHTML = wants.length
-    ? renderShowGroups(wants, { scope: 'wants', addable: false, includeTraderFormat: false, includeMediaType: true })
+    ? renderShowGroups(wants, { scope: 'wants', addable: false, includeTraderFormat: false, includeMediaType: true, groupBy: chooseGroupBy(wants) })
     : '<div class="empty-state"><h3>No wants found.</h3><p>Try another title, format, or keyword.</p></div>';
   trackOpenGroups(wantsList, 'wants');
 }
