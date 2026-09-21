@@ -59,6 +59,8 @@ Each collection page is one entry in `COLLECTION_ROUTES` at the top of `app.js`.
 
 Write the filter to return true for exactly the rows you want, and check it doesn't overlap another page, or recordings will show up twice. Any column in `collection.csv` is fair game: `recording.Tour === 'West End'`, `recording.City.includes('London')`, `recording.Master === 'StarCuffedJeans'`.
 
+A route can also set `sortOptions` to decide what its sort dropdown offers — `TITLE_SORT_OPTIONS` (A–Z, the default if you leave this off) or `DATE_SORT_OPTIONS` (oldest first / newest first). Hadestown uses `DATE_SORT_OPTIONS` since every recording on that page shares the same title, which makes A–Z useless there. Use `DATE_SORT_OPTIONS` for any other page that ends up as a single show; leave everything else on the default.
+
 ## Troubleshooting
 
 **"Collection unavailable" instead of the recording list** — `app.js` couldn't fetch `collection.csv` or `wants.csv`. Almost always one of:

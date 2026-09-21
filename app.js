@@ -14,24 +14,42 @@
    1. CONFIGURATION
    --------------------------------------------------------------------------- */
 
+// Sort dropdown options offered on the collection pages (see `sortOptions`
+// below). Most pages only make sense sorted A–Z — there's no useful
+// chronological story across a folder of unrelated shows. A single-show page
+// like Hadestown has the opposite problem: every row has the same title, so
+// A–Z is useless there and what actually matters is which date each
+// recording is from — hence date sorting instead of title sorting.
+const TITLE_SORT_OPTIONS = [{ value: 'title', label: 'A–Z by title' }];
+const DATE_SORT_OPTIONS = [
+  { value: 'date-ascending', label: 'Date: oldest first' },
+  { value: 'date-descending', label: 'Date: newest first' },
+];
+
 // The three collection pages. The key is the URL hash (e.g. "#audios"), and
 // each entry says what heading to show and which recordings belong on it.
 // `filter` is a test run against every row of collection.csv: rows that return
-// true appear on that page.
+// true appear on that page. `sortOptions` (see above) decides what the sort
+// dropdown offers on that page; a route that doesn't set one gets
+// TITLE_SORT_OPTIONS, so it's safe to leave off on a page that just wants
+// the default A–Z behavior.
 const COLLECTION_ROUTES = {
   // Everything marked as Audio in the "Audio / Video" column.
   audios: {
     title: 'Audios',
     eyebrow: '07 / Audios',
     filter: (recording) => recording['Audio / Video'] === 'Audio',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
-  // Videos whose show name is exactly "Hadestown".
+  // Videos whose show name is exactly "Hadestown". A single-show page, so
+  // date sorting (see DATE_SORT_OPTIONS above) instead of the usual A–Z.
   hadestown: {
     title: 'Hadestown',
     eyebrow: '07 / Hadestown',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() === 'hadestown',
+    sortOptions: DATE_SORT_OPTIONS,
   },
   // New in that shows recordings collected in the last 7 days
   'New-In': {
@@ -47,6 +65,7 @@ const COLLECTION_ROUTES = {
     // collected rather than by Show — see groupByCollectedDate() — so the
     // newest arrivals are always the first thing you see, newest day first.
     groupBy: 'collected',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   // All other videos, split alphabetically into pages 
   'videos-#-b': {
@@ -56,6 +75,7 @@ const COLLECTION_ROUTES = {
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) < 'c',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   'videos-c-e': {
     title: 'Videos C–E',
@@ -65,6 +85,7 @@ const COLLECTION_ROUTES = {
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 'c' &&
       firstLetter(recording) < 'f',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   'videos-f-i': {
     title: 'Videos F–I',
@@ -74,6 +95,7 @@ const COLLECTION_ROUTES = {
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 'f' &&
       firstLetter(recording) < 'j',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   'videos-j-m': {
     title: 'Videos J–M',
@@ -83,6 +105,7 @@ const COLLECTION_ROUTES = {
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 'j' &&
       firstLetter(recording) < 'n',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   'videos-n-r': {
     title: 'Videos N–R',
@@ -92,6 +115,7 @@ const COLLECTION_ROUTES = {
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 'n' &&
       firstLetter(recording) < 'r',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   'videos-s-z': {
     title: 'Videos S–Z',
@@ -100,6 +124,7 @@ const COLLECTION_ROUTES = {
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
       firstLetter(recording) >= 's',
+    sortOptions: TITLE_SORT_OPTIONS,
   },
   
 };
@@ -212,6 +237,25 @@ function recordingDateValue(recording) {
   const date = String(recording.Date || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
   const timestamp = Date.parse(date);
   return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
+}
+
+// Compares two recordings by date, for the date-ascending/date-descending
+// sort options. Recordings with an unparseable Date always sort to the very
+// end, regardless of direction. Naively doing `dateB - dateA` for "newest
+// first" would instead put them at the *front* — recordingDateValue uses
+// +Infinity to mean "unknown", and Infinity is the largest possible value,
+// so a plain descending subtraction treats it as the newest thing on the
+// page. Ties (including two unknown dates) fall back to title order.
+function compareByDate(a, b, direction) {
+  const dateA = recordingDateValue(a);
+  const dateB = recordingDateValue(b);
+  const unknownA = dateA === Number.POSITIVE_INFINITY;
+  const unknownB = dateB === Number.POSITIVE_INFINITY;
+  const byTitle = () => sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b)));
+
+  if (unknownA && unknownB) return byTitle();
+  if (unknownA || unknownB) return unknownA ? 1 : -1;
+  return (direction === 'ascending' ? dateA - dateB : dateB - dateA) || byTitle();
 }
 
 // True when a recording is still under NFT restriction: marked "NFT Forever",
@@ -554,6 +598,29 @@ function trackOpenGroups(list, scope) {
 }
 
 /**
+ * Rebuilds the #collection-sort dropdown to match the current page's
+ * sortOptions (see COLLECTION_ROUTES) — A–Z on most pages, oldest/newest on
+ * a single-show page like Hadestown. Keeps the current selection if it's
+ * still valid for the new set (e.g. switching between two A–Z pages), or
+ * falls back to the first option otherwise (e.g. arriving at Hadestown from
+ * a page where "date-ascending" wasn't offered).
+ *
+ * Only touches the DOM when the option set has actually changed — renderRecordings()
+ * calls this on every keystroke in search, and rebuilding/reselecting the
+ * dropdown every time would silently undo whatever the visitor had picked.
+ */
+function populateSortOptions(route) {
+  const select = document.querySelector('#collection-sort');
+  const options = route.sortOptions || TITLE_SORT_OPTIONS;
+  const key = options.map((option) => option.value).join(',');
+  if (select.dataset.optionsKey === key) return;
+
+  select.innerHTML = options.map((option) => `<option value="${option.value}">${option.label}</option>`).join('');
+  select.dataset.optionsKey = key;
+  select.value = options[0].value;
+}
+
+/**
  * Draws the collection list for whichever page is currently open, applying the
  * search box and the sort dropdown. Called again on every keystroke in search.
  */
@@ -563,6 +630,12 @@ function renderRecordings() {
   // Work out which page we're on from the URL hash; fall back to Audios.
   const route = COLLECTION_ROUTES[location.hash.replace('#', '')] || COLLECTION_ROUTES.audios;
   const query = document.querySelector('#collection-search').value.toLowerCase().trim();
+
+  // Rebuild the sort dropdown to match this page's sortOptions (A–Z on most
+  // pages, oldest/newest on a single-show page like Hadestown) before
+  // reading its value, so `sort` below reflects the options actually on
+  // screen rather than whatever was left over from the previous page.
+  populateSortOptions(route);
   const sort = document.querySelector('#collection-sort').value;
 
   // Update the page heading to match the route.
@@ -577,9 +650,9 @@ function renderRecordings() {
   // Apply the chosen sort. In both date sorts, ties fall back to title order
   // (that's what the `||` after the date comparison does).
   recordings = [...recordings].sort((a, b) => sort === 'date-ascending'
-    ? recordingDateValue(a) - recordingDateValue(b) || sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b)))
+    ? compareByDate(a, b, 'ascending')
     : sort === 'date-descending'
-      ? recordingDateValue(b) - recordingDateValue(a) || sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b)))
+      ? compareByDate(a, b, 'descending')
       : sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b))));
 
   document.querySelector('#collection-result-count').textContent = formatCount(recordings.length, 'recording');

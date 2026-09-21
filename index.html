@@ -220,10 +220,12 @@
           </label>
           <div class="result-meta">
             <span id="collection-result-count">0 recordings</span>
+            <!-- The options here are a pre-JS fallback only. app.js rebuilds this
+                 dropdown per page (populateSortOptions(), keyed off each route's
+                 sortOptions in COLLECTION_ROUTES) — most pages get A–Z, a
+                 single-show page like Hadestown gets oldest/newest instead. -->
             <select id="collection-sort" aria-label="Sort collection">
               <option value="title">A–Z by title</option>
-              <option value="date-ascending">By date ascending</option>
-              <option value="date-descending">By date descending</option>
             </select>
           </div>
         </div>
