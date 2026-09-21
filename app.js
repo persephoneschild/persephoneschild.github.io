@@ -43,6 +43,10 @@ const COLLECTION_ROUTES = {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       return collectedDate >= sevenDaysAgo;
     },
+    // Unlike every other page, New In groups by the day something was
+    // collected rather than by Show — see groupByCollectedDate() — so the
+    // newest arrivals are always the first thing you see, newest day first.
+    groupBy: 'collected',
   },
   // All other videos, split alphabetically into pages 
   'videos-#-b': {
@@ -397,6 +401,37 @@ function groupByShow(items) {
 }
 
 /**
+ * Groups an already filtered list of recordings by the day they were
+ * Collected (the "Collected" column is always "YYYY-MM-DD" or a full
+ * timestamp, from the Encora sync — only the date part is used). Groups are
+ * ordered newest day first, oldest day last, regardless of what order the
+ * items were passed in. A recording with no Collected value lands in an
+ * "Date unknown" group at the very end. Returns the same shape as
+ * groupByShow(): an array of { title, items }.
+ */
+function groupByCollectedDate(items) {
+  const groups = [];
+  const indexByDate = new Map();
+
+  items.forEach((item) => {
+    const isoDate = String(item.Collected || '').slice(0, 10);
+    const key = /^\d{4}-\d{2}-\d{2}$/.test(isoDate) ? isoDate : '';
+    if (!indexByDate.has(key)) {
+      indexByDate.set(key, groups.length);
+      groups.push({ key, title: key ? formatIsoDate(key) : 'Date unknown', items: [item] });
+    } else {
+      groups[indexByDate.get(key)].items.push(item);
+    }
+  });
+
+  // Newest collected day first. An empty key (unknown date) always sorts
+  // last, since '' is "smaller" than any real "YYYY-MM-DD" string.
+  groups.sort((a, b) => b.key.localeCompare(a.key));
+
+  return groups;
+}
+
+/**
  * Turns a list of recordings/wants into the grouped, collapsible HTML used by
  * both the collection pages and the Wants page: one <details> per Show, with
  * every recording of that show folded away inside until it's clicked open.
@@ -410,16 +445,25 @@ function groupByShow(items) {
  *           checkbox); false on Wants (nothing to add to the cart).
  * includeTraderFormat / includeMediaType — passed straight through to
  *           recordingDetails(), same meaning as everywhere else it's used.
+ * groupBy   — "show" (default) groups by Show, newest-collected-day-agnostic,
+ *           and folds are ordered oldest-to-newest by the recording's own
+ *           Date. "collected" (used by New In) groups by the day each
+ *           recording was Collected, newest day first, and folds are ordered
+ *           A–Z by title since everything in a fold shares one day.
  */
-function renderShowGroups(items, { scope, addable, includeTraderFormat, includeMediaType }) {
-  const groups = groupByShow(items);
+function renderShowGroups(items, { scope, addable, includeTraderFormat, includeMediaType, groupBy = 'show' }) {
+  const groupedByCollectedDate = groupBy === 'collected';
+  const groups = groupedByCollectedDate ? groupByCollectedDate(items) : groupByShow(items);
 
-  // Inside a fold, recordings are always ordered oldest-to-newest by their
-  // Date column, regardless of whatever sort is chosen for the page overall
-  // (that sort only decides which order the show groups themselves appear
-  // in). Unparseable/missing dates sort last, same rule as everywhere else.
+  // Inside a fold, recordings are ordered oldest-to-newest by their Date
+  // column for Show groups, or A–Z by title for Collected-date groups (their
+  // Date column has nothing to do with the group they're in). Either way
+  // this only decides order *within* a fold — groupByShow/groupByCollectedDate
+  // above already decided what order the folds themselves appear in.
   groups.forEach((group) => {
-    group.items.sort((a, b) => recordingDateValue(a) - recordingDateValue(b));
+    group.items.sort(groupedByCollectedDate
+      ? (a, b) => sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b)))
+      : (a, b) => recordingDateValue(a) - recordingDateValue(b));
   });
 
   return groups.map((group, groupIndex) => {
@@ -428,8 +472,12 @@ function renderShowGroups(items, { scope, addable, includeTraderFormat, includeM
       const titleClass = restricted ? ' is-nft' : '';
       // Inside an opened show, each recording is told apart by Tour, Date and
       // Master rather than repeating the Show name, which is already the
-      // heading.
-      const subtitle = `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`;
+      // heading — except in a Collected-date group, where the heading is a
+      // date rather than a Show name, so the Show title is prepended here
+      // instead so it's still clear what each row actually is.
+      const subtitle = groupedByCollectedDate
+        ? `${recordingTitle(recording)} — ${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`
+        : `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`;
       const addControl = addable && !restricted
         ? (() => {
           const selected = state.cart.some((item) => item._id === recording._id);
@@ -498,7 +546,7 @@ function renderRecordings() {
   // state if nothing matched. Checkboxes are pre-ticked if that recording is
   // already in the cart, so the ticks survive switching pages.
   list.innerHTML = recordings.length
-    ? renderShowGroups(recordings, { scope: 'recordings', addable: true, includeTraderFormat: true, includeMediaType: false })
+    ? renderShowGroups(recordings, { scope: 'recordings', addable: true, includeTraderFormat: true, includeMediaType: false, groupBy: route.groupBy })
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
   // The rows were only just created, so their click/toggle handlers are
