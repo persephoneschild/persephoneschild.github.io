@@ -65,7 +65,7 @@ const COLLECTION_ROUTES = {
     // collected rather than by Show — see groupByCollectedDate() — so the
     // newest arrivals are always the first thing you see, newest day first.
     groupBy: 'collected',
-    sortOptions: TITLE_SORT_OPTIONS,
+    //sortOptions: TITLE_SORT_OPTIONS,
   },
   // All other videos, split alphabetically into pages 
   'videos-#-b': {
