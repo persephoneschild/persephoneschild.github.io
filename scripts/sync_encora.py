@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Pulls your collection and wants from the Encora API and writes them as
-collection.csv / wants.csv in the exact column layout the site expects
-(see README.md > "CSV columns").
+collection.csv / wants.csv in the column layout the site expects (see
+README.md > "CSV columns").
 
 Run manually:
     ENCORA_API_KEY=xxxx python3 scripts/sync_encora.py
@@ -10,32 +10,11 @@ Run manually:
 In CI, ENCORA_API_KEY comes from a GitHub Actions secret (see
 .github/workflows/sync-encora.yml).
 
-------------------------------------------------------------------------
-STATUS
-Both mappings are confirmed against real API responses.
-
-Collection: /api/collection is Laravel-style paginated (current_page /
-last_page / data), so it's walked with fetch_all_pages().
-
-Wants: /api/wants returns { recording: {...}, priority, priority_label }
-per item, wrapping the exact same nested `recording` object as collection
-(cast, date, nft, metadata, notes, master_notes, release_format all
-present). It isn't documented as paginated, so it's fetched with a single
-api_get() call and no per_page param.
-
-priority / priority_label (0-5, or -1 for "Trade Requested") are not
-written to wants.csv - the site has no Priority column and doesn't need
-one.
-
-Date precision: `date.full_date` always comes back as a complete
-YYYY-MM-DD, even when Encora doesn't actually know the month or day -
-unknown components default to "01" internally. The real precision lives
-in `date.month_known` / `date.day_known` (and `date.date_variant`, likely
-the source of the "(1)"-style suffixes Encora shows for recordings that
-share an imprecise date). format_date_field() uses those flags so an
-unknown day writes out as "October, 2025" instead of a false-precise
-"2025-10-01" (confirmed against recording 2026829, "Born With Teeth").
-------------------------------------------------------------------------
+Note: Date precision. `date.full_date` is always a complete YYYY-MM-DD even
+when Encora doesn't know the month/day (unknown parts default to "01"); the
+real precision is in `date.month_known`/`date.day_known`, which
+format_date_field() uses so an unknown day writes "October, 2025" instead of
+a false-precise "2025-10-01".
 """
 
 import csv
@@ -63,9 +42,7 @@ COLLECTION_ONLY_COLUMNS = [
 ]
 
 
-# --------------------------------------------------------------------
 # HTTP helpers
-# --------------------------------------------------------------------
 
 def api_get(path, params=None):
     """GET an Encora API endpoint with the bearer token, return parsed JSON."""
@@ -77,10 +54,7 @@ def api_get(path, params=None):
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json",
         "Accept": "application/json",
-        # Without this, urllib's default User-Agent is the literal string
-        # "Python-urllib/3.x", which Cloudflare's bot protection commonly
-        # blocklists outright (error 1010 / browser_signature_banned),
-        # independent of whether the API key is valid.
+        # Default urllib User-Agent gets blocklisted by Cloudflare (error 1010).
         "User-Agent": "PersephonesChildCollectionSync/1.0 (+https://github.com/)",
     })
 
@@ -99,11 +73,7 @@ def api_get(path, params=None):
 
 
 def fetch_all_pages(path, per_page=500):
-    """
-    Walks a Laravel-style paginated endpoint (current_page/last_page/data),
-    which is the shape /api/collection actually returns. Stops once
-    current_page reaches last_page.
-    """
+    """Walks a Laravel-style paginated endpoint (current_page/last_page/data), used by /api/collection."""
     records = []
     page = 1
     while True:
@@ -115,19 +85,15 @@ def fetch_all_pages(path, per_page=500):
     return records
 
 
-# --------------------------------------------------------------------
 # Small shared helpers
-# --------------------------------------------------------------------
 
 def bool_to_csv(value):
-    """The site's checks (e.g. `if (recording['NFT Forever'])`) just test
-    truthiness, so blank = false, "TRUE" = true is enough."""
+    """blank = false, "TRUE" = true — matches the site's truthiness checks."""
     return "TRUE" if value else ""
 
 
 def format_cast(cast_list):
-    """recording.cast is a list of {performer: {name}, character: {name}}.
-    Joined as "Performer as Character; Performer as Character; ..."."""
+    """Joins recording.cast as "Performer (Character); Performer (Character); ..."."""
     if not cast_list:
         return ""
     parts = []
@@ -160,14 +126,8 @@ MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
 
 
 def format_date_field(date_obj):
-    """
-    Turns a recording's `date` object into the text written to the Date
-    column, respecting Encora's own month_known/day_known flags instead of
-    trusting full_date blindly.
-
-    month_known/day_known default to True if Encora ever omits them, so a
-    date object without these flags still round-trips exactly as before.
-    """
+    """Turns a recording's `date` object into the Date column text, respecting
+    Encora's month_known/day_known flags instead of trusting full_date blindly."""
     full_date = date_obj.get("full_date") or ""
     if not full_date:
         return ""
@@ -191,9 +151,7 @@ def format_date_field(date_obj):
     return result
 
 
-# --------------------------------------------------------------------
-# Collection mapping - confirmed against a real API response.
-# --------------------------------------------------------------------
+# Collection mapping.
 
 def map_collection_record(item):
     recording = item["recording"]
@@ -211,7 +169,6 @@ def map_collection_record(item):
         "Cast": format_cast(recording.get("cast")),
         "Master Notes": recording.get("master_notes") or "",
         "Trading Notes": recording.get("notes") or "",
-        # nft_date arrives as a full timestamp; only the date is shown.
         "NFT Date": (nft.get("nft_date") or "")[:10],
         "NFT Forever": bool_to_csv(nft.get("nft_forever")),
         "Not For Sale": bool_to_csv(metadata.get("is_nfs")),
@@ -221,28 +178,19 @@ def map_collection_record(item):
         "Venue": metadata.get("venue", ""),
         "City": metadata.get("city", ""),
         "Link": recording_link(recording.get("id")),
-        # Collection-only columns - these live on the wrapper, not `recording`,
-        # since they're specific to your copy rather than the recording itself.
+        # Collection-only: lives on the wrapper item, not `recording`.
         "Gifting Status": metadata.get("gifting_status", ""),
         "Limited Trade Status": metadata.get("limited_status", ""),
         "Trader Format": item.get("format") or "",
         "My Notes": item.get("notes") or "",
-        # collected_at comes back as a full timestamp
-        # ("2026-09-16T23:59:49.000000Z"); only the date is used on the site,
-        # so the time is dropped here to keep the CSV readable.
         "Collected": (item.get("collected_at") or "")[:10],
     }
     return row
 
 
-# --------------------------------------------------------------------
-# Wants mapping - confirmed against a real /api/wants response. Same
-# nested `recording` shape as collection, wrapped as
-# { recording: {...}, priority, priority_label } instead of the
-# collection wrapper. priority / priority_label are intentionally not
-# written out - no Priority column on the site. No collection-only
-# fields apply here either (no format/notes/collected_at on a want).
-# --------------------------------------------------------------------
+# Wants mapping. Same nested `recording` shape as collection, wrapped as
+# { recording, priority, priority_label } instead — priority isn't written
+# out (no Priority column on the site), nor are collection-only fields.
 
 def map_want_record(item):
     recording = item["recording"]
@@ -260,7 +208,6 @@ def map_want_record(item):
         "Cast": format_cast(recording.get("cast")),
         "Master Notes": recording.get("master_notes") or "",
         "Trading Notes": recording.get("notes") or "",
-        # nft_date arrives as a full timestamp; only the date is shown.
         "NFT Date": (nft.get("nft_date") or "")[:10],
         "NFT Forever": bool_to_csv(nft.get("nft_forever")),
         "Not For Sale": bool_to_csv(metadata.get("is_nfs")),

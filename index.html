@@ -1,48 +1,27 @@
 <!doctype html>
-<!--
-  PersephonesChild Collection - index.html
-
-  Each <section class="view"> below is one
-  "page" (Home, Collection, Wants, Cart); app.js shows one at a time depending
-  on the # in the address bar, so nothing ever reloads.
-
-  Anything with an id="..." is filled in or updated by app.js.
-  Anything with data-route / data-view is used for navigation.
--->
+<!-- index.html: each <section class="view"> is one page, shown/hidden by app.js based on the URL hash. id="..." elements are filled in by app.js; data-route/data-view drive navigation. -->
 <html lang="en">
 <head>
-  <!-- Page setup: text encoding, mobile scaling, the description search engines show, and the browser tab title. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PersephonesChild Collection">
   <title>PersephonesChild Collection</title>
-  <!-- Google Fonts: Noto Sans JP, used everywhere on the site (labels, body copy, and the home page hero headline alike). The preconnect lines just make it load a little faster. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- The main stylesheet. -->
   <link rel="stylesheet" href="styles.css">
-  <!--
-    Site-specific overrides. This block loads AFTER styles.css, so every rule
-    here beats the matching rule in that file. This is where the 
-    colour scheme and the recording-row layout actually come from.
-  -->
+  <!-- Loads after styles.css, so these rules win. Dark blue palette + current recording-row layout live here. -->
   <style>
-    /* The dark blue palette, replacing the cream/olive defaults in styles.css. */
     :root { --ink: #e8f1fb; --muted: #91a7bd; --paper: #081322; --line: #1d3852; --accent: #55a9e8; --rust: #8bc7f2; --white: #f4f8fc; --nft: #ff6b6b; }
-    /* Page background. */
     body { background: var(--paper); }
-    /* Dark styling for the "Copy your request" panel and its text box. */
     .checkout-panel { background: #0d1d30; }
     .checkout-panel input, .checkout-panel textarea { background: #07111f; color: var(--ink); }
-    /* The contact block and the bulleted rule lists on the home page. */
     .contact-block { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0; }
     .contact-block b { color: var(--ink); }
     .info-title { color: var(--rust); font: 700 22px 'Noto Sans JP', sans-serif; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 30px; }
     .info-subheading { color: var(--rust); font: 700 16px 'Noto Sans JP', sans-serif; letter-spacing: .05em; text-transform: uppercase; margin: 34px 0 14px; }
     .info-list { color: var(--muted); font-size: 12px; line-height: 1.65; margin: 0 0 28px; padding-left: 18px; max-width: 560px; }
     .info-list li { padding-left: 5px; margin-bottom: 10px; }
-    /* Home page layout: full-width hero, the two centred counters, roomier text. */
     .hero-grid { display: block; min-height: 0; }
     .hero-copy { max-width: 820px; padding-right: 0; }
     .last-updated { color: var(--muted); font: 11px 'Noto Sans JP', sans-serif; margin: 18px 0 0; }
@@ -54,9 +33,7 @@
     .intro-band > div { width: 100%; }
     .intro-band .text-link { display: inline-flex; margin-top: 24px; }
     .info-list { max-width: none; }
-    /* Recording rows as they look now: title row on top, then a four-column grid
-       of details (Tour, Date, Master, Cast, Notes, NFT date, Trader Format).
-       Cast and Notes span two columns because they are long. */
+    /* Recording row: title row on top, then a details grid (Cast/Notes span two columns). */
     .recording-row { display: block; padding: 24px 0; }
     .recording-row-top { display: grid; grid-template-columns: 50px 1fr 100px; align-items: center; gap: 18px; }
     .recording-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 24px; margin: 22px 0 0 68px; }
@@ -64,48 +41,33 @@
     .recording-field span { color: var(--rust); font: 10px 'Noto Sans JP', sans-serif; text-transform: uppercase; }
     .recording-field b { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
     .recording-field-wide, .recording-field-cast { grid-column: span 2; }
-    /* The read-only box on the cart page holding the copyable request text. */
     .request-preview { width: 100%; min-height: 150px; margin: 18px 0 0; border: 1px solid var(--line); background: #07111f; color: var(--ink); font: 11px/1.6 'Noto Sans JP', sans-serif; padding: 12px; resize: vertical; }
-    /* The "Add" checkbox at the right of each recording row. */
     .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'Noto Sans JP', sans-serif; cursor: pointer; }
     .recording-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
-    /* Show groups: recordings.csv/wants.csv rows sharing a Show are folded
-       together under one <details>, closed by default so the collection reads
-       as one line per show. A show with only one recording is rendered
-       already open (see app.js), since there's nothing to tuck away there. */
+    /* Show groups: rows sharing a Show are folded under one <details>, closed by default. */
     .show-group-summary { list-style: none; cursor: pointer; }
     .show-group-summary::-webkit-details-marker { display: none; }
-    /* Count + chevron on the right of the show name, in place of the Add
-       checkbox column used on a plain (ungrouped) row. */
+    /* Count + chevron, in place of the Add checkbox column used on an ungrouped row. */
     .show-group-meta { justify-self: end; display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font: 10px 'Noto Sans JP', sans-serif; text-transform: uppercase; }
     .show-group-meta::after { content: '⌄'; color: var(--accent); font-size: 13px; transition: transform .2s; }
     .show-group[open] > .show-group-summary .show-group-meta::after { transform: rotate(180deg); }
     .show-group-summary:hover .recording-title { color: var(--accent); }
-    /* The recordings inside an opened show: one .recording-subrow per Tour/
-       Date, each with its own details grid and (on the collection pages) its
-       own Add checkbox, separated by hairlines instead of the full row gap
-       used between shows. */
+    /* Recordings inside an opened show: one .recording-subrow per Tour/Date. */
     .show-group-body { margin-top: 18px; }
     .recording-subrow { padding: 16px 0; border-top: 1px dashed var(--line); }
     .recording-subrow:first-child { border-top: 0; padding-top: 0; }
     .recording-subrow .recording-title { font-size: 14px; font-weight: 500; color: var(--muted); }
     .recording-subrow .recording-title.is-nft { color: var(--nft); }
-    /* Making the result-meta dropdowns readable against the dark background. */
     .result-meta select { background: #fff; color: #000; }
     .result-meta select:focus { background: #000; color: #fff; }
     .result-meta option { background: #000; color: #fff; }
-    /* Small typography tweaks: heading aside, the heart wordmark, hero headline size. */
     .heading-aside { font-size: 17px; }
     .wordmark-mark { background: transparent; color: var(--accent); font-size: 23px; line-height: 1; }
     .hero-copy h1 { font-size: clamp(40px, 5vw, 70px); }
-    /* Phone layout for recording rows: narrower columns, details in two columns. */
     @media (max-width: 700px) { .recording-row-top { grid-template-columns: 32px 1fr 82px; gap: 8px; } .recording-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-left: 40px; gap: 16px 12px; } .recording-field-wide, .recording-field-cast { grid-column: 1 / -1; } }
-    /* Buttons in the blue scheme, with a lighter blue on hover. */
     .button-dark { background: #12304b; color: #f4f8fc; border-color: #55a9e8; }
     .button-dark:hover { background: #1d5278; border-color: #8bc7f2; }
-    /* The Collection dropdown in the header. It is a plain <details> element, so
-       it opens and closes without any JavaScript; app.js only closes it again
-       after a link inside is clicked. */
+    /* Collection dropdown: a plain <details>; app.js just closes it after a link is clicked. */
     .collection-menu { position: relative; }
     .collection-menu summary { list-style: none; padding: 8px 0; color: var(--muted); cursor: pointer; }
     .collection-menu summary::-webkit-details-marker { display: none; }
@@ -114,26 +76,21 @@
     .collection-dropdown { position: absolute; z-index: 5; top: 32px; left: 50%; min-width: 150px; padding: 8px 0; transform: translateX(-50%); border: 1px solid var(--line); background: #0d1d30; box-shadow: 0 12px 24px rgba(0, 0, 0, .22); }
     .collection-dropdown a { display: block; padding: 10px 16px; color: var(--muted); white-space: nowrap; }
     .collection-dropdown a:hover, .collection-dropdown a.active { color: var(--white); background: #12304b; }
-    /* The Videos index page (#videos): one card per video page. */
     .index-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 40px 0 90px; }
     .index-card { display: block; padding: 26px; border: 1px solid var(--line); background: #0d1d30; transition: .2s; }
     .index-card:hover { border-color: var(--accent); background: #12304b; }
     .index-card h3 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
     .index-card p { margin: 10px 0 0; color: var(--muted); font: 10px 'Noto Sans JP', sans-serif; text-transform: uppercase; }
     @media (max-width: 700px) { .index-grid { grid-template-columns: 1fr; gap: 12px; padding: 28px 0 60px; } }
-    /* On phones the dropdown is left-aligned instead of centred. */
     @media (max-width: 700px) { .site-header { gap: 16px; } .main-nav { gap: 16px; } .collection-dropdown { left: 0; transform: none; } }
   </style>
 </head>
 <body>
   <div class="site-shell">
-    <!-- Header: wordmark on the left, navigation in the middle, cart on the right. -->
     <header class="site-header">
       <a class="wordmark" href="#home" aria-label="PersephonesChild Collection home"><span class="wordmark-mark" aria-hidden="true">&#9825;</span><span>PERSEPHONESCHILD</span></a>
-      <!-- Main navigation. app.js adds class="active" to whichever link matches the current page. -->
       <nav class="main-nav" aria-label="Main navigation">
         <a href="#home" data-route="home">Home</a>
-        <!-- Collection menu. <summary> is the visible label; the links inside appear when it is open. -->
         <details class="collection-menu">
           <summary data-route="collection">Collection</summary>
           <div class="collection-dropdown">
@@ -143,12 +100,10 @@
         </details>
         <a href="#wants" data-route="wants">Wants</a>
       </nav>
-      <!-- Cart link. The number in #cart-count is kept up to date by renderCart() in app.js. -->
       <a class="cart-link" href="#cart" aria-label="Open cart"><span class="cart-icon">+</span><span>Cart</span><span class="cart-count" id="cart-count">0</span></a>
     </header>
 
     <main>
-      <!-- HOME PAGE -->
       <section class="view active" id="home-view" data-view="home">
         <div class="hero-grid">
           <div class="hero-copy">
@@ -156,12 +111,10 @@
             <p class="last-updated" id="last-updated">Last Updated: —</p>
           </div>
         </div>
-        <!-- The two counters. They read 00 until app.js has loaded the CSV files. -->
         <div class="home-stats">
           <div><strong id="home-recording-count">00</strong><span>recordings<br>in collection</span></div>
           <div><strong id="home-want-count">00</strong><span>wants</span></div>
         </div>
-        <!-- Information band: your trading rules, contact rules and contact details. Plain text - edit it directly here. -->
         <div class="intro-band">
           <div>
             <h3 class="info-title">Information</h3>
@@ -187,7 +140,7 @@
         </div>
       </section>
 
-      <!-- VIDEOS INDEX PAGE: just links to the individual video pages. The cards are built by renderVideoIndex() in app.js. -->
+      <!-- Cards built by renderVideoIndex() in app.js. -->
       <section class="view" id="videos-view" data-view="videos">
         <div class="page-heading">
           <div>
@@ -198,16 +151,13 @@
         <div class="index-grid" id="video-index-list"></div>
       </section>
 
-      <!-- COLLECTION PAGE (shared by Videos, Hadestown and Audios - the heading changes to match). -->
       <section class="view" id="collection-view" data-view="collection">
-        <!-- Heading. The title text is replaced by app.js depending on which of the three pages is open. -->
         <div class="page-heading">
           <div>
             <h2 id="collection-title">Audios</h2>
           </div>
           <p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p>
         </div>
-        <!-- Toolbar: search box, result count, and the sort dropdown. -->
         <div class="toolbar">
           <label class="search-box">
             <span>⌕</span>
@@ -216,20 +166,16 @@
           </label>
           <div class="result-meta">
             <span id="collection-result-count">0 recordings</span>
-            <!-- The options here are a pre-JS fallback only. app.js rebuilds this
-                 dropdown per page (populateSortOptions(), keyed off each route's
-                 sortOptions in COLLECTION_ROUTES) — most pages get A–Z, a
-                 single-show page like Hadestown gets oldest/newest instead. -->
+            <!-- Fallback only; app.js rebuilds this per page (populateSortOptions()). -->
             <select id="collection-sort" aria-label="Sort collection">
               <option value="title">A–Z by title</option>
             </select>
           </div>
         </div>
-        <!-- Empty on purpose: app.js builds the recording rows in here. aria-live tells screen readers to announce changes. -->
+        <!-- app.js builds the recording rows here. -->
         <div class="recording-list" id="recording-list" aria-live="polite"></div>
       </section>
 
-      <!-- WANTS PAGE -->
       <section class="view" id="wants-view" data-view="wants">
         <div class="page-heading">
           <div>
@@ -237,7 +183,6 @@
           </div>
           <p class="heading-aside">My current wants, some of which could be trades in progress.</p>
         </div>
-        <!-- Wants toolbar: search, count, the Audio/Video filter, and the sort dropdown. The list below is built by app.js. -->
         <div class="toolbar">
           <label class="search-box">
             <span>⌕</span>
@@ -260,7 +205,6 @@
         
       </section>
 
-      <!-- CART PAGE -->
       <section class="view" id="cart-view" data-view="cart">
         <div class="page-heading">
           <div>
@@ -268,7 +212,6 @@
           </div>
           <p class="heading-aside">Copy your request and send me an email :)</p>
         </div>
-        <!-- Cart items on the left (or the empty-cart message), copy panel on the right. -->
         <div class="cart-layout">
           <div>
             <div id="cart-items" class="cart-items"></div>
@@ -287,12 +230,10 @@
         </div>
       </section>
     </main>
-    <!-- Footer. -->
     <footer class="site-footer">
       <span>PersephonesChild Collection</span>
     </footer>
   </div>
-  <!-- Loads the JavaScript last, so all the elements above already exist when it runs. -->
   <script src="app.js"></script>
 </body>
 </html>

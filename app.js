@@ -1,47 +1,21 @@
-/* ============================================================================
-   PersephonesChild Collection — app.js
+// app.js — loads collection.csv/wants.csv, renders the pages, handles search/sort/cart/routing.
 
-   What this file does, top to bottom:
-     1. Sets up configuration (the three collection pages).
-     2. Holds all site data in one `state` object.
-     3. Reads collection.csv / wants.csv and turns them into JavaScript objects.
-     4. Draws the recording lists, the wants list, and the cart onto the page.
-     5. Handles routing (#home, #videos, #hadestown, #audios, #wants, #cart).
+/* ---------------- 1. Configuration ---------------- */
 
-   ============================================================================ */
-
-/* ---------------------------------------------------------------------------
-   1. CONFIGURATION
-   --------------------------------------------------------------------------- */
-
-// Sort dropdown options offered on the collection pages (see `sortOptions`
-// below). Most pages only make sense sorted A–Z — there's no useful
-// chronological story across a folder of unrelated shows. A single-show page
-// like Hadestown has the opposite problem: every row has the same title, so
-// A–Z is useless there and what actually matters is which date each
-// recording is from — hence date sorting instead of title sorting.
+// DATE_SORT_OPTIONS is for single-show pages (e.g. Hadestown), where every row has the same title so A–Z is useless.
 const TITLE_SORT_OPTIONS = [{ value: 'title', label: 'A–Z by title' }];
 const DATE_SORT_OPTIONS = [
   { value: 'date-ascending', label: 'Date: oldest first' },
   { value: 'date-descending', label: 'Date: newest first' },
 ];
 
-// The three collection pages. The key is the URL hash (e.g. "#audios"), and
-// each entry says what heading to show and which recordings belong on it.
-// `filter` is a test run against every row of collection.csv: rows that return
-// true appear on that page. `sortOptions` (see above) decides what the sort
-// dropdown offers on that page; a route that doesn't set one gets
-// TITLE_SORT_OPTIONS, so it's safe to leave off on a page that just wants
-// the default A–Z behavior.
+// The collection pages, keyed by URL hash. filter selects rows from collection.csv; sortOptions defaults to TITLE_SORT_OPTIONS.
 const COLLECTION_ROUTES = {
-  // Everything marked as Audio in the "Audio / Video" column.
   audios: {
     title: 'Audios',
     filter: (recording) => recording['Audio / Video'] === 'Audio',
     sortOptions: TITLE_SORT_OPTIONS,
   },
-  // Videos whose show name is exactly "Hadestown". A single-show page, so
-  // date sorting (see DATE_SORT_OPTIONS above) instead of the usual A–Z.
   hadestown: {
     title: 'Hadestown',
     filter: (recording) =>
@@ -49,7 +23,6 @@ const COLLECTION_ROUTES = {
       recordingTitle(recording).toLowerCase() === 'hadestown',
     sortOptions: DATE_SORT_OPTIONS,
   },
-  // New in that shows recordings collected in the last 7 days
   'New-In': {
     title: 'New In',
     filter: (recording) => {
@@ -58,13 +31,9 @@ const COLLECTION_ROUTES = {
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       return collectedDate >= sevenDaysAgo;
     },
-    // Unlike every other page, New In groups by the day something was
-    // collected rather than by Show — see groupByCollectedDate() — so the
-    // newest arrivals are always the first thing you see, newest day first.
+    // Groups by collected day instead of Show — see groupByCollectedDate().
     groupBy: 'collected',
-    //sortOptions: TITLE_SORT_OPTIONS,
   },
-  // All other videos, split alphabetically into pages 
   'videos-#-b': {
     title: 'Videos #–B',
     filter: (recording) =>
@@ -117,74 +86,43 @@ const COLLECTION_ROUTES = {
       firstLetter(recording) >= 's',
     sortOptions: TITLE_SORT_OPTIONS,
   },
-  
 };
 
-// The pages listed on the Videos index page (#videos), in the order they
-// appear there. Every key must exist in COLLECTION_ROUTES above; add a key
-// here when you add a video page, and the card appears automatically.
+// Cards shown on the Videos index page (#videos), in order. Every key must exist in COLLECTION_ROUTES.
 const VIDEO_INDEX_ROUTES = ['New-In', 'videos-#-b', 'videos-c-e', 'videos-f-i', 'videos-j-m', 'videos-n-r', 'videos-s-z', 'hadestown'];
 
-// The single source of truth for the page:
-//   recordings — every row from collection.csv
-//   wants      — every row from wants.csv
-//   cart       — the recordings the visitor has ticked
-//   openGroups — which show groups are currently unfolded, keyed by
-//                "recordings:Show Name" or "wants:Show Name" so the two
-//                lists don't share state. Re-read on every render so a
-//                group stays open across re-renders (e.g. ticking Add).
+// openGroups is keyed "recordings:Show" / "wants:Show" so the two lists' open/closed state doesn't mix.
 const state = { recordings: [], wants: [], cart: [], openGroups: new Set() };
 
 
-/* ---------------------------------------------------------------------------
-   2. CSV PARSING
-   --------------------------------------------------------------------------- */
+/* ---------------- 2. CSV parsing ---------------- */
 
-/**
- * Turns raw CSV text into an array of objects, one per row, keyed by the
- * column headers on the first line. For example the row
- *     Audio,Hadestown,West End,...
- * becomes
- *     { "Audio / Video": "Audio", Show: "Hadestown", Tour: "West End", ... }
- *
- * It reads the text one character at a time because commas and line breaks are
- * allowed *inside* quoted cells (cast lists are full of commas), so a simple
- * text.split(',') would break the data apart in the wrong places.
- */
+// Parses CSV char-by-char (not split(',')) since quoted cells can contain commas and newlines.
 function parseCSV(text) {
-  const rows = [];   // every finished row
-  let row = [];      // the row currently being built
-  let cell = '';     // the cell currently being built
-  let quoted = false; // are we inside a "quoted cell" right now?
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let quoted = false;
 
   for (let index = 0; index < text.length; index += 1) {
     const character = text[index];
 
     if (quoted) {
-      // Inside quotes, commas and newlines are ordinary text.
-      // A doubled quote ("") is the CSV way of writing a literal quote mark.
       if (character === '"' && text[index + 1] === '"') { cell += '"'; index += 1; }
-      else if (character === '"') quoted = false; // closing quote
+      else if (character === '"') quoted = false;
       else cell += character;
     }
-    // An opening quote only counts at the very start of a cell.
     else if (character === '"' && cell === '') quoted = true;
-    // A comma outside quotes ends the current cell.
     else if (character === ',') { row.push(cell.trim()); cell = ''; }
-    // A newline outside quotes ends the cell *and* the row.
     else if (character === '\n') { row.push(cell.trim()); rows.push(row); row = []; cell = ''; }
-    // Ignore carriage returns (Windows line endings); keep everything else.
     else if (character !== '\r') cell += character;
   }
 
-  // Files often end without a trailing newline — save whatever is left over.
   if (cell || row.length) { row.push(cell.trim()); rows.push(row); }
 
-  // The first row is the header row: it supplies the property names.
   const headers = rows.shift().map((header) => header.trim());
 
-  // Pair each header with the matching cell, and give every recording a unique
-  // internal id (recording-1, recording-2, ...) so the cart can track it.
+  // Every recording gets a unique internal id (recording-1, recording-2, ...) so the cart can track it.
   return rows.filter((row) => row.length).map((row, index) => Object.assign(
     Object.fromEntries(headers.map((header, headerIndex) => [header, (row[headerIndex] || '').trim()])),
     { _id: `recording-${index + 1}` },
@@ -192,19 +130,13 @@ function parseCSV(text) {
 }
 
 
-/* ---------------------------------------------------------------------------
-   3. SMALL HELPERS
-   --------------------------------------------------------------------------- */
+/* ---------------- 3. Small helpers ---------------- */
 
-// The display name of a recording: the "Show" column, with fallbacks.
 function recordingTitle(recording) {
   return recording.Show || recording.title || 'Untitled recording';
 }
 
-// The name used for alphabetical sorting only. It lowercases the title, turns a
-// leading "[Something] Title" into "Something Title", and drops a leading
-// "the", "a" or "an" so that "The Who's Tommy" files under T-o-m-m-y... rather
-// than under T-h-e.
+// Lowercases, unwraps a leading "[Something]", and drops a leading "the/a/an" so "The Who's Tommy" files under T-o-m-m-y.
 function sortableTitle(title) {
   return title
     .toLowerCase()
@@ -214,29 +146,18 @@ function sortableTitle(title) {
     .trim();
 }
 
-// The first character of a title as it's used for sorting, so "The Wiz" counts
-// as W and "[Workshop] Hadestown" counts as W too. Used to split Videos into
-// A-H / I-Z pages.
 function firstLetter(recording) {
   return sortableTitle(recordingTitle(recording)).charAt(0).toLowerCase();
 }
 
-// Converts the Date column into a number so dates can be sorted.
-// It first removes any trailing bracketed note, e.g. "June, 2024 (matinee)".
-// Anything unparseable sorts last, because Infinity is larger than any date.
+// Strips a trailing "(note)" before parsing. Unparseable dates sort last (+Infinity).
 function recordingDateValue(recording) {
   const date = String(recording.Date || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
   const timestamp = Date.parse(date);
   return Number.isNaN(timestamp) ? Number.POSITIVE_INFINITY : timestamp;
 }
 
-// Compares two recordings by date, for the date-ascending/date-descending
-// sort options. Recordings with an unparseable Date always sort to the very
-// end, regardless of direction. Naively doing `dateB - dateA` for "newest
-// first" would instead put them at the *front* — recordingDateValue uses
-// +Infinity to mean "unknown", and Infinity is the largest possible value,
-// so a plain descending subtraction treats it as the newest thing on the
-// page. Ties (including two unknown dates) fall back to title order.
+// Unknown dates always sort last regardless of direction (a plain descending subtraction would otherwise put them first). Ties fall back to title.
 function compareByDate(a, b, direction) {
   const dateA = recordingDateValue(a);
   const dateB = recordingDateValue(b);
@@ -249,41 +170,27 @@ function compareByDate(a, b, direction) {
   return (direction === 'ascending' ? dateA - dateB : dateB - dateA) || byTitle();
 }
 
-// True when a recording is still under NFT restriction: marked "NFT Forever",
-// or given an "NFT Date" that hasn't passed yet (i.e. it's NFT until then).
-// A past NFT Date means the restriction has already expired.
+// Restricted while "NFT Forever" is set, or "NFT Date" hasn't passed yet.
 function isNftRestricted(recording) {
   if (recording['NFT Forever']) return true;
   const nftDate = Date.parse(recording['NFT Date']);
   return !Number.isNaN(nftDate) && nftDate > Date.now();
 }
 
-// "1 recording" / "12 recordings" — adds the plural s only when needed.
 function formatCount(count, noun) {
   return `${count} ${noun}${count === 1 ? '' : 's'}`;
 }
 
-// Spelled-out month names, used by formatIsoDate below.
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-// Turns an ISO date like "2026-09-16" into "September 16, 2026". Parsed by
-// splitting the string rather than with Date.parse/toLocaleDateString, so a
-// visitor west of UTC never sees the date shifted back by a day.
-//
-// The slice(0, 10) takes just the date part, so a full timestamp
-// ("2026-09-16T23:59:49.000000Z", which is what the Encora API returns for
-// collected_at) works too. Without it the day would come out as
-// "16T23:59:49.000000Z" and print as NaN.
+// "2026-09-16" -> "September 16, 2026". Split rather than Date.parse, so a visitor west of UTC doesn't see the date shift back a day.
+// slice(0, 10) also handles a full timestamp like collected_at ("2026-09-16T23:59:49.000000Z").
 function formatIsoDate(isoDate) {
   const [year, month, day] = isoDate.slice(0, 10).split('-').map(Number);
   return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
 }
 
-// The value shown in the "NFT date" field. "NFT Forever" outranks any date,
-// since that restriction never lifts. Otherwise the date is formatted the same
-// way as the Date column; the Encora API sends it as a full timestamp
-// ("2014-11-30T00:00:00.000000Z"), which formatIsoDate trims for us. Anything
-// that isn't an ISO date is shown exactly as entered.
+// "NFT Forever" outranks any date. Non-ISO values are shown as entered.
 function formatNftValue(recording) {
   if (recording['NFT Forever']) return 'NFT Forever';
   const raw = recording['NFT Date'] || '';
@@ -291,45 +198,27 @@ function formatNftValue(recording) {
   return /^\d{4}-\d{2}-\d{2}/.test(raw) ? formatIsoDate(raw) : raw;
 }
 
-// Reads one column from a recording, showing "Not listed" when it is empty.
 function recordingField(recording, label, fallback = 'Not listed') {
   return recording[label] || fallback;
 }
 
-// Formats the Date column for display. The sync script writes ISO dates
-// straight from the Encora API (e.g. "2025-06-01"); this turns those into
-// "June 1, 2025" using the same split-based approach as formatIsoDate, so a
-// visitor west of UTC never sees the date shift back a day. Anything that
-// isn't a plain ISO date (e.g. hand-typed text like "June, 2024") is shown
-// exactly as entered, since recordingDateValue's sort already tolerates that.
+// Non-ISO dates (e.g. hand-typed "June, 2024") are shown as entered.
 function formatRecordingDate(recording) {
   const raw = recording.Date || '';
   if (!raw) return 'Not listed';
   return /^\d{4}-\d{2}-\d{2}/.test(raw) ? formatIsoDate(raw) : raw;
 }
 
-/**
- * Builds the grid of labelled details shown under a recording's title
- * (Tour, Date, Master, Cast, Notes, NFT date, Trader Format).
- *
- * includeTraderFormat — true on the collection pages, false on Wants
- *                       (you don't have a format for something you don't own).
- * includeMediaType    — true on Wants, where audio and video are mixed
- *                       together, false on the collection pages which are
- *                       already split by format.
- */
+// Builds the details grid under a recording's title (Tour, Date, Master, Cast, Notes, NFT date, Trader Format).
+// includeTraderFormat: collection pages only. includeMediaType: Wants only (audio/video mixed together there).
 function recordingDetails(recording, includeTraderFormat = true, includeMediaType = false) {
-  // Master Notes and Trading Notes are merged into a single "Notes" field,
-  // each prefixed so it's clear which is which, separated by a pipe.
   const notes = [
     recording['Master Notes'] && `Master: ${recording['Master Notes']}`,
     recording['Trading Notes'] && `Trader: ${recording['Trading Notes']}`,
   ].filter(Boolean).join(' | ') || 'Not listed';
 
-  // "NFT Forever", a formatted NFT date, or "Not listed".
   const nft = formatNftValue(recording);
 
-  // These two blocks are included or left empty depending on the flags above.
   const mediaType = includeMediaType
     ? `<div class="recording-field"><span>Audio / Video</span><b>${recordingField(recording, 'Audio / Video')}</b></div>`
     : '';
@@ -337,51 +226,34 @@ function recordingDetails(recording, includeTraderFormat = true, includeMediaTyp
     ? `<div class="recording-field"><span>Trader Format</span><b>${recordingField(recording, 'Trader Format')}</b></div>`
     : '';
 
-  // The finished HTML. "recording-field-cast" and "recording-field-wide" are
-  // styled to span two columns, since cast lists and notes are long.
   return `<div class="recording-fields">${mediaType}<div class="recording-field"><span>Tour</span><b>${recordingField(recording, 'Tour')}</b></div><div class="recording-field"><span>Date</span><b>${formatRecordingDate(recording)}</b></div><div class="recording-field"><span>Master</span><b>${recordingField(recording, 'Master')}</b></div><div class="recording-field recording-field-cast"><span>Cast</span><b>${recordingField(recording, 'Cast')}</b></div><div class="recording-field recording-field-wide"><span>Notes</span><b>${notes}</b></div><div class="recording-field"><span>NFT date</span><b>${nft}</b></div>${traderFormat}</div>`;
 }
 
 
-/* ---------------------------------------------------------------------------
-   4. LOADING THE DATA
-   --------------------------------------------------------------------------- */
+/* ---------------- 4. Loading the data ---------------- */
 
-/**
- * Fetches both CSV files (relative to index.html, so it works both locally and
- * on GitHub Pages), parses them, sorts the collection A–Z, then draws the page.
- * Both files are requested at the same time via Promise.all rather than one
- * after the other, which is quicker.
- */
+// Fetches both CSVs in parallel (relative to index.html, works locally and on Pages), parses, sorts A–Z, renders.
 async function loadData() {
   const collectionUrl = new URL('collection.csv', document.baseURI);
   const wantsUrl = new URL('wants.csv', document.baseURI);
 
   const [recordingsResponse, wantsResponse] = await Promise.all([fetch(collectionUrl), fetch(wantsUrl)]);
 
-  // A missing or misnamed file shows up here; the error is caught at the very
-  // bottom of this file and turned into a message on the page.
   if (!recordingsResponse.ok) throw new Error(`collection.csv returned ${recordingsResponse.status}`);
   if (!wantsResponse.ok) throw new Error(`wants.csv returned ${wantsResponse.status}`);
 
   state.recordings = parseCSV(await recordingsResponse.text());
   state.wants = parseCSV(await wantsResponse.text());
 
-  // Default order for the whole collection: alphabetical, ignoring articles.
   state.recordings.sort((a, b) => sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b))));
 
   renderAll();
 }
 
 
-/* ---------------------------------------------------------------------------
-   5. RENDERING
-   Each render function reads from `state` and rewrites one part of the page.
-   --------------------------------------------------------------------------- */
+/* ---------------- 5. Rendering ---------------- */
 
-// Redraws everything, refreshes the two counters on the home page, and sets
-// "Last Updated" to the most recent Collected date — no manual editing needed.
-// padStart(2, '0') is what turns 7 into the "07" styling.
+// Redraws everything and refreshes the home page counters + "Last Updated" (latest Collected date).
 function renderAll() {
   renderRecordings();
   renderVideoIndex();
@@ -390,18 +262,12 @@ function renderAll() {
   document.querySelector('#home-recording-count').textContent = String(state.recordings.length).padStart(2, '0');
   document.querySelector('#home-want-count').textContent = String(state.wants.length).padStart(2, '0');
 
-  // Collected dates are all "YYYY-MM-DD", so plain string comparison sorts
-  // them chronologically — no date parsing needed to find the latest one.
+  // Collected dates are "YYYY-MM-DD", so plain string comparison sorts chronologically.
   const latestCollected = state.recordings.reduce((latest, recording) => (recording.Collected > latest ? recording.Collected : latest), '');
   document.querySelector('#last-updated').textContent = latestCollected ? `Last Updated: ${formatIsoDate(latestCollected)}` : 'Last Updated: —';
 }
 
-/**
- * Draws the Videos index page: one card per entry in VIDEO_INDEX_ROUTES,
- * each linking to that page and showing how many recordings are on it.
- * The count is worked out by running the page's own filter over the
- * collection, so it can never drift out of step with the page itself.
- */
+// One card per VIDEO_INDEX_ROUTES entry; each count is computed live from the route's own filter so it can't drift.
 function renderVideoIndex() {
   const list = document.querySelector('#video-index-list');
   if (!list) return;
@@ -414,12 +280,7 @@ function renderVideoIndex() {
   }).join('');
 }
 
-/**
- * Groups an already filtered/sorted list of recordings (or wants) by Show
- * title, preserving the order the items already come in — so a group lands
- * wherever its first recording would have sorted. Returns an array of
- * { title, items } groups, one per distinct Show.
- */
+// Groups items by Show, preserving first-seen order. Returns [{ title, items }, ...].
 function groupByShow(items) {
   const groups = [];
   const indexByTitle = new Map();
@@ -435,15 +296,7 @@ function groupByShow(items) {
   return groups;
 }
 
-/**
- * Groups an already filtered list of recordings by the day they were
- * Collected (the "Collected" column is always "YYYY-MM-DD" or a full
- * timestamp, from the Encora sync — only the date part is used). Groups are
- * ordered newest day first, oldest day last, regardless of what order the
- * items were passed in. A recording with no Collected value lands in an
- * "Date unknown" group at the very end. Returns the same shape as
- * groupByShow(): an array of { title, items }.
- */
+// Groups by the day Collected (YYYY-MM-DD), newest day first; unknown dates land in a trailing "Date unknown" group.
 function groupByCollectedDate(items) {
   const groups = [];
   const indexByDate = new Map();
@@ -459,57 +312,22 @@ function groupByCollectedDate(items) {
     }
   });
 
-  // Newest collected day first. An empty key (unknown date) always sorts
-  // last, since '' is "smaller" than any real "YYYY-MM-DD" string.
+  // '' (unknown) sorts last since it's "smaller" than any real date string.
   groups.sort((a, b) => b.key.localeCompare(a.key));
 
   return groups;
 }
 
-/**
- * Decides how renderShowGroups() should group a page's results.
- *
- * An explicit `explicitGroupBy` (currently only New In's "collected") always
- * wins, since that's a deliberate choice about how that page works — it
- * shouldn't change based on what happens to be in the results today.
- *
- * Otherwise, grouping by Show only makes sense when there's more than one
- * Show on the page: a single-show page (Hadestown today, but this works for
- * any page that ends up that way, not just that one route) would just put
- * everything under one pointless fold you have to open before seeing
- * anything. So with exactly one distinct Show among the results, this
- * returns "none" instead of "show".
- */
+// An explicit groupBy (e.g. New In's "collected") always wins. Otherwise grouping by Show is skipped ("none")
+// when the results are all one Show (e.g. Hadestown), since a single fold would just hide everything pointlessly.
 function chooseGroupBy(items, explicitGroupBy) {
   if (explicitGroupBy) return explicitGroupBy;
   const distinctShows = new Set(items.map(recordingTitle));
   return distinctShows.size === 1 ? 'none' : 'show';
 }
 
-/**
- * Turns a list of recordings/wants into the grouped, collapsible HTML used by
- * both the collection pages and the Wants page: one <details> per Show, with
- * every recording of that show folded away inside until it's clicked open.
- * Every group starts closed, even a show with just one recording, so the
- * list is consistent and nothing unfolds until you click it. Once opened, a
- * group stays open across re-renders (see state.openGroups / trackOpenGroups).
- *
- * scope     — "recordings" or "wants", so the two lists' open/closed state
- *             (state.openGroups) never bleeds into each other.
- * addable   — true on the collection pages (each recording gets an Add
- *           checkbox); false on Wants (nothing to add to the cart).
- * includeTraderFormat / includeMediaType — passed straight through to
- *           recordingDetails(), same meaning as everywhere else it's used.
- * groupBy   — "show" (default) groups by Show, and folds are ordered
- *           oldest-to-newest by the recording's own Date. "collected" (used
- *           by New In) groups by the day each recording was Collected,
- *           newest day first, folds ordered A–Z by title since everything in
- *           a fold shares one day. "none" (used automatically whenever a
- *           page's results are all the same Show — see chooseGroupBy —
- *           since grouping by Show is pointless when there's only one)
- *           skips grouping/folding entirely: every recording is its own
- *           always-open row, in whatever order `items` already comes in.
- */
+// Renders recordings/wants as collapsible <details> per Show (closed by default; state persists via state.openGroups),
+// or as a flat list when groupBy is 'none'. scope keeps recordings/wants open-state separate.
 function renderShowGroups(items, { scope, addable, includeTraderFormat, includeMediaType, groupBy = 'show' }) {
   if (groupBy === 'none') {
     return items.map((recording, index) => {
@@ -522,10 +340,6 @@ function renderShowGroups(items, { scope, addable, includeTraderFormat, includeM
           return `<label class="check-control"><input class="recording-check" data-recording-id="${recording._id}" type="checkbox" ${selected ? 'checked' : ''}><span>Add</span></label>`;
         })()
         : '';
-      // Reuses .recording-row/.recording-row-top (the same classes a show
-      // group's summary line uses) rather than .recording-subrow, so a
-      // standalone row keeps the normal bold title size instead of the
-      // smaller, muted style meant for rows nested inside an opened show.
       return `<div class="recording-row"><div class="recording-row-top"><span class="recording-index">${String(index + 1).padStart(2, '0')}</span><strong class="recording-title${titleClass}">${subtitle}</strong>${addControl}</div>${recordingDetails(recording, includeTraderFormat, includeMediaType)}</div>`;
     }).join('');
   }
@@ -533,11 +347,7 @@ function renderShowGroups(items, { scope, addable, includeTraderFormat, includeM
   const groupedByCollectedDate = groupBy === 'collected';
   const groups = groupedByCollectedDate ? groupByCollectedDate(items) : groupByShow(items);
 
-  // Inside a fold, recordings are ordered oldest-to-newest by their Date
-  // column for Show groups, or A–Z by title for Collected-date groups (their
-  // Date column has nothing to do with the group they're in). Either way
-  // this only decides order *within* a fold — groupByShow/groupByCollectedDate
-  // above already decided what order the folds themselves appear in.
+  // Within a fold: oldest-to-newest by Date for Show groups, A–Z by title for Collected-date groups.
   groups.forEach((group) => {
     group.items.sort(groupedByCollectedDate
       ? (a, b) => sortableTitle(recordingTitle(a)).localeCompare(sortableTitle(recordingTitle(b)))
@@ -548,11 +358,7 @@ function renderShowGroups(items, { scope, addable, includeTraderFormat, includeM
     const recordingsHtml = group.items.map((recording) => {
       const restricted = isNftRestricted(recording);
       const titleClass = restricted ? ' is-nft' : '';
-      // Inside an opened show, each recording is told apart by Tour, Date and
-      // Master rather than repeating the Show name, which is already the
-      // heading — except in a Collected-date group, where the heading is a
-      // date rather than a Show name, so the Show title is prepended here
-      // instead so it's still clear what each row actually is.
+      // Collected-date groups prepend the Show name since the fold heading is a date, not a Show.
       const subtitle = groupedByCollectedDate
         ? `${recordingTitle(recording)} — ${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`
         : `${recordingField(recording, 'Tour')} — ${formatRecordingDate(recording)} — ${recordingField(recording, 'Master')}`;
@@ -565,18 +371,13 @@ function renderShowGroups(items, { scope, addable, includeTraderFormat, includeM
       return `<div class="recording-subrow"><div class="recording-row-top"><span class="recording-index">&ndash;</span><strong class="recording-title${titleClass}">${subtitle}</strong>${addControl}</div>${recordingDetails(recording, includeTraderFormat, includeMediaType)}</div>`;
     }).join('');
 
-    // Restores whatever open/closed state this group had before the list was
-    // last rebuilt (e.g. by ticking an Add checkbox), so opening a show to
-    // browse it doesn't get undone by an unrelated re-render.
     const openAttribute = state.openGroups.has(`${scope}:${group.title}`) ? ' open' : '';
 
     return `<details class="recording-row show-group"${openAttribute}><summary class="recording-row-top show-group-summary"><span class="recording-index">${String(groupIndex + 1).padStart(2, '0')}</span><strong class="recording-title">${group.title}</strong><span class="show-group-meta">${formatCount(group.items.length, 'recording')}</span></summary><div class="show-group-body">${recordingsHtml}</div></details>`;
   }).join('');
 }
 
-// Wires up every .show-group in `list` so opening or closing it is remembered
-// in state.openGroups (under the given scope), and re-attaches on every
-// re-render since the elements themselves are recreated each time.
+// Remembers each .show-group's open/closed state in state.openGroups, keyed by scope; re-attached on every render.
 function trackOpenGroups(list, scope) {
   list.querySelectorAll('.show-group').forEach((details) => {
     const title = details.querySelector('.show-group-summary .recording-title').textContent;
@@ -588,18 +389,8 @@ function trackOpenGroups(list, scope) {
   });
 }
 
-/**
- * Rebuilds the #collection-sort dropdown to match the current page's
- * sortOptions (see COLLECTION_ROUTES) — A–Z on most pages, oldest/newest on
- * a single-show page like Hadestown. Keeps the current selection if it's
- * still valid for the new set (e.g. switching between two A–Z pages), or
- * falls back to the first option otherwise (e.g. arriving at Hadestown from
- * a page where "date-ascending" wasn't offered).
- *
- * Only touches the DOM when the option set has actually changed — renderRecordings()
- * calls this on every keystroke in search, and rebuilding/reselecting the
- * dropdown every time would silently undo whatever the visitor had picked.
- */
+// Rebuilds #collection-sort to match the route's sortOptions, keeping the current value if still valid.
+// Only touches the DOM when the option set actually changed, since this runs on every search keystroke.
 function populateSortOptions(route) {
   const select = document.querySelector('#collection-sort');
   const options = route.sortOptions || TITLE_SORT_OPTIONS;
@@ -611,34 +402,22 @@ function populateSortOptions(route) {
   select.value = options[0].value;
 }
 
-/**
- * Draws the collection list for whichever page is currently open, applying the
- * search box and the sort dropdown. Called again on every keystroke in search.
- */
+// Draws the collection list for the current route, applying search + sort. Re-run on every search keystroke.
 function renderRecordings() {
   const list = document.querySelector('#recording-list');
 
-  // Work out which page we're on from the URL hash; fall back to Audios.
   const route = COLLECTION_ROUTES[location.hash.replace('#', '')] || COLLECTION_ROUTES.audios;
   const query = document.querySelector('#collection-search').value.toLowerCase().trim();
 
-  // Rebuild the sort dropdown to match this page's sortOptions (A–Z on most
-  // pages, oldest/newest on a single-show page like Hadestown) before
-  // reading its value, so `sort` below reflects the options actually on
-  // screen rather than whatever was left over from the previous page.
   populateSortOptions(route);
   const sort = document.querySelector('#collection-sort').value;
 
-  // Update the page heading to match the route.
   document.querySelector('#collection-title').textContent = route.title;
 
-  // Keep recordings that belong on this page AND match the search. The search
-  // looks at every column, so venue, cast, master and notes are all searchable.
+  // Search checks every column (venue, cast, master, notes, etc.).
   let recordings = state.recordings.filter((recording) =>
     route.filter(recording) && Object.values(recording).some((value) => value.toLowerCase().includes(query)));
 
-  // Apply the chosen sort. In both date sorts, ties fall back to title order
-  // (that's what the `||` after the date comparison does).
   recordings = [...recordings].sort((a, b) => sort === 'date-ascending'
     ? compareByDate(a, b, 'ascending')
     : sort === 'date-descending'
@@ -647,29 +426,16 @@ function renderRecordings() {
 
   document.querySelector('#collection-result-count').textContent = formatCount(recordings.length, 'recording');
 
-  // Recordings are grouped by Show into collapsible <details> — same show,
-  // different Tour/Date, folded together until clicked open — or, on a page
-  // where every result is the same Show (see chooseGroupBy), a flat list
-  // with nothing to click open. Or an empty state if nothing matched.
-  // Checkboxes are pre-ticked if that recording is already in the cart, so
-  // the ticks survive switching pages.
   list.innerHTML = recordings.length
     ? renderShowGroups(recordings, { scope: 'recordings', addable: true, includeTraderFormat: true, includeMediaType: false, groupBy: chooseGroupBy(recordings, route.groupBy) })
     : '<div class="empty-state"><h3>No recordings found.</h3><p>Try another title, place, or keyword.</p></div>';
 
-  // The rows were only just created, so their click/toggle handlers are
-  // attached now. Each checkbox remembers its recording in a
-  // data-recording-id attribute; each show group's open/closed state is
-  // remembered in state.openGroups so it survives the next re-render.
   list.querySelectorAll('.recording-check').forEach((checkbox) =>
     checkbox.addEventListener('change', () => toggleCart(checkbox.dataset.recordingId)));
   trackOpenGroups(list, 'recordings');
 }
 
-/**
- * Draws the wants list. Same shape as renderRecordings: filters by the search
- * box and the Audio/Video dropdown, always sorted A–Z by title.
- */
+// Same shape as renderRecordings: filtered by search + Audio/Video, always sorted A–Z.
 function renderWants() {
   const mediaFilter = document.querySelector('#wants-media-filter').value;
   const query = document.querySelector('#wants-search').value.toLowerCase().trim();
@@ -681,12 +447,6 @@ function renderWants() {
 
   document.querySelector('#wants-result-count').textContent = formatCount(wants.length, 'want');
 
-  // Grouped by Show, same as the collection pages (and, same as the
-  // collection pages, left ungrouped if a search has narrowed the results
-  // down to one Show — see chooseGroupBy). Note the flags passed through to
-  // recordingDetails: no Trader Format, but do show whether each want is
-  // audio or video. addable: false, since wants have nothing to add to the
-  // cart.
   const wantsList = document.querySelector('#wants-list');
   wantsList.innerHTML = wants.length
     ? renderShowGroups(wants, { scope: 'wants', addable: false, includeTraderFormat: false, includeMediaType: true, groupBy: chooseGroupBy(wants) })
@@ -695,13 +455,8 @@ function renderWants() {
 }
 
 
-/* ---------------------------------------------------------------------------
-   6. THE CART
-   --------------------------------------------------------------------------- */
+/* ---------------- 6. The cart ---------------- */
 
-// Adds a recording to the cart, or removes it if it is already there.
-// Used by both the checkboxes and the Remove buttons. renderAll() afterwards
-// keeps the checkboxes, the cart page and the header count in sync.
 function toggleCart(id) {
   const recording = state.recordings.find((item) => item._id === id);
   const existingIndex = state.cart.findIndex((item) => item._id === id);
@@ -710,77 +465,55 @@ function toggleCart(id) {
   renderAll();
 }
 
-// One line of the request that gets copied, in the format promised on the
-// cart page: Show - Tour - Date - Master - Encora Link.
+// Format promised on the cart page: Show - Tour - Date - Master - Encora Link.
 function requestLine(recording) {
   return `${recordingTitle(recording)} - ${recordingField(recording, 'Tour')} - ${formatRecordingDate(recording)} - ${recordingField(recording, 'Master')} ${recordingField(recording, 'Link')}`;
 }
 
-// Redraws the cart page and the little number badge in the header, and keeps
-// the copyable text box up to date.
 function renderCart() {
   document.querySelector('#cart-count').textContent = state.cart.length;
 
   const items = document.querySelector('#cart-items');
   const empty = document.querySelector('#cart-empty');
 
-  // Show the "Your cart is quiet" block only when the cart is empty.
   empty.style.display = state.cart.length ? 'none' : 'block';
 
   items.innerHTML = state.cart.map((recording) =>
     `<div class="cart-item"><div><h3>${recordingTitle(recording)}</h3><p>${recordingField(recording, 'Tour')} / ${formatRecordingDate(recording)} / ${recordingField(recording, 'Master')}</p></div><button class="remove-item" data-remove-id="${recording._id}" type="button">Remove</button></div>`).join('');
 
-  // The read-only textarea showing exactly what will be copied.
   document.querySelector('#request-preview').textContent = state.cart.map(requestLine).join('\n');
 
-  // Hook up the Remove buttons that were just created.
   items.querySelectorAll('[data-remove-id]').forEach((button) =>
     button.addEventListener('click', () => toggleCart(button.dataset.removeId)));
 }
 
 
-/* ---------------------------------------------------------------------------
-   7. ROUTING
-   The site is a single HTML page; "navigating" means showing one <section> and
-   hiding the rest, based on the part of the URL after the #.
-   --------------------------------------------------------------------------- */
+/* ---------------- 7. Routing ---------------- */
 
 function showRoute() {
   const route = location.hash.replace('#', '') || 'home';
 
-  // Ignore anything that isn't a real page (e.g. a hand-typed #whatever).
   const validRoute = ['home', 'videos', 'audios', 'hadestown', 'New-In', 'videos-#-b', 'videos-c-e', 'videos-f-i', 'videos-j-m', 'videos-n-r', 'videos-s-z', 'wants', 'cart'].includes(route) ? route : 'home';
 
-  // Videos, Hadestown and Audios all share the one collection section.
+  // Videos, Hadestown and Audios all share one <section>.
   const isCollectionRoute = ['audios', 'hadestown', 'New-In', 'videos-#-b', 'videos-c-e', 'videos-f-i', 'videos-j-m', 'videos-n-r', 'videos-s-z'].includes(validRoute);
 
-  // Show the matching section, hide the others.
   document.querySelectorAll('.view').forEach((view) =>
     view.classList.toggle('active', view.dataset.view === validRoute || (view.dataset.view === 'collection' && isCollectionRoute)));
 
-  // The Videos index is in the Collection menu but has its own section, so it
-  // keeps the menu highlighted without sharing the collection view.
+  // The Videos index has its own section but stays under the Collection menu highlight.
   const isCollectionMenuRoute = isCollectionRoute || validRoute === 'videos';
 
-  // Highlight the matching nav link (the Collection menu stays highlighted for
-  // all of its sub-pages).
   document.querySelectorAll('[data-route]').forEach((link) =>
     link.classList.toggle('active', link.dataset.route === validRoute || (link.dataset.route === 'collection' && isCollectionMenuRoute)));
 
-  // Moving between Videos / Hadestown / Audios reuses the same section, so its
-  // contents have to be redrawn. The length check avoids running before the
-  // CSVs have finished loading.
+  // Redraw since Videos/Hadestown/Audios reuse the same section; length check avoids running before CSVs load.
   if (isCollectionRoute && state.recordings.length) renderRecordings();
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/**
- * Copies the request to the clipboard. With an empty cart it sends the visitor
- * to the collection instead. The try/catch covers older browsers and pages not
- * served over https, where the modern clipboard API is unavailable — it then
- * falls back to selecting the textarea and using the old execCommand method.
- */
+// Falls back to selecting the textarea + execCommand on older/non-https browsers where clipboard API is unavailable.
 async function copyRequest() {
   if (!state.cart.length) { location.hash = 'audios'; return; }
 
@@ -797,36 +530,23 @@ async function copyRequest() {
 }
 
 
-/* ---------------------------------------------------------------------------
-   8. WIRING UP THE CONTROLS AND STARTING THE SITE
-   These run once, when the page first loads.
-   --------------------------------------------------------------------------- */
+/* ---------------- 8. Wiring up controls and startup ---------------- */
 
-// Search box: redraw the list on every keystroke.
 document.querySelector('#collection-search').addEventListener('input', renderRecordings);
-
-// Sort dropdown on the collection pages.
 document.querySelector('#collection-sort').addEventListener('change', renderRecordings);
 
-// Wants search box and filters. (The wants sort dropdown currently only
-// offers A–Z, so this listener redraws an identically-sorted list —
-// harmless, and ready for more options later.)
 document.querySelector('#wants-search').addEventListener('input', renderWants);
 document.querySelector('#wants-media-filter').addEventListener('change', renderWants);
 document.querySelector('#wants-sort').addEventListener('change', renderWants);
 
-// The Copy request button on the cart page.
 document.querySelector('#copy-request-button').addEventListener('click', copyRequest);
 
-// Close the Collection dropdown menu after one of its links is clicked.
 document.querySelectorAll('.collection-dropdown a').forEach((link) =>
   link.addEventListener('click', () => { link.closest('details').open = false; }));
 
-// Browser back/forward buttons and nav links both change the hash.
 window.addEventListener('hashchange', showRoute);
 
-// Keyboard shortcut: pressing "/" jumps to the collection and focuses search.
-// The check on activeElement stops it firing while typing in a field.
+// "/" jumps to the collection and focuses search; ignored while typing in a field.
 document.addEventListener('keydown', (event) => {
   if (event.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
     event.preventDefault();
@@ -835,12 +555,8 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// Show the correct section straight away...
 showRoute();
 
-// ...then load the data. If either CSV can't be read (wrong filename, wrong
-// folder, or opening index.html directly instead of through a local server),
-// this prints a readable explanation in place of the collection.
 loadData().catch((error) => {
   document.querySelector('#recording-list').innerHTML = `<div class="empty-state"><h3>Collection unavailable.</h3><p>${error.message}. Confirm collection.csv and wants.csv are in the same repository folder as index.html.</p></div>`;
   document.querySelector('#home-recording-count').textContent = '--';
