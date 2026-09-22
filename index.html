@@ -16,10 +16,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="PersephonesChild Collection">
   <title>PersephonesChild Collection</title>
-  <!-- Google Fonts: DM Mono (the small uppercase labels) and Manrope (everything else). The preconnect lines just make them load a little faster. -->
+  <!-- Google Fonts: Noto Sans JP, used everywhere on the site (labels, body copy, and the home page hero headline alike). The preconnect lines just make it load a little faster. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- The main stylesheet. -->
   <link rel="stylesheet" href="styles.css">
   <!--
@@ -38,12 +38,14 @@
     /* The contact block and the bulleted rule lists on the home page. */
     .contact-block { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0; }
     .contact-block b { color: var(--ink); }
+    .info-title { color: var(--rust); font: 700 22px 'Noto Sans JP', sans-serif; letter-spacing: .06em; text-transform: uppercase; margin: 0 0 30px; }
+    .info-subheading { color: var(--rust); font: 700 16px 'Noto Sans JP', sans-serif; letter-spacing: .05em; text-transform: uppercase; margin: 34px 0 14px; }
     .info-list { color: var(--muted); font-size: 12px; line-height: 1.65; margin: 0 0 28px; padding-left: 18px; max-width: 560px; }
     .info-list li { padding-left: 5px; margin-bottom: 10px; }
     /* Home page layout: full-width hero, the two centred counters, roomier text. */
     .hero-grid { display: block; min-height: 0; }
     .hero-copy { max-width: 820px; padding-right: 0; }
-    .last-updated { color: var(--muted); font: 11px 'DM Mono', monospace; margin: 18px 0 0; }
+    .last-updated { color: var(--muted); font: 11px 'Noto Sans JP', sans-serif; margin: 18px 0 0; }
     .home-stats { max-width: none; margin: 0; text-align: left; grid-template-columns: 1fr 1fr; }
     .home-stats div, .home-stats div + div { justify-content: center; padding-left: 0; padding-right: 0; text-align: center; }
     .info-list { font-size: 16px; line-height: 1.7; }
@@ -59,13 +61,13 @@
     .recording-row-top { display: grid; grid-template-columns: 50px 1fr 100px; align-items: center; gap: 18px; }
     .recording-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 24px; margin: 22px 0 0 68px; }
     .recording-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-    .recording-field span { color: var(--rust); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+    .recording-field span { color: var(--rust); font: 10px 'Noto Sans JP', sans-serif; text-transform: uppercase; }
     .recording-field b { color: var(--muted); font-size: 12px; font-weight: 500; line-height: 1.45; overflow-wrap: anywhere; }
     .recording-field-wide, .recording-field-cast { grid-column: span 2; }
     /* The read-only box on the cart page holding the copyable request text. */
-    .request-preview { width: 100%; min-height: 150px; margin: 18px 0 0; border: 1px solid var(--line); background: #07111f; color: var(--ink); font: 11px/1.6 'DM Mono', monospace; padding: 12px; resize: vertical; }
+    .request-preview { width: 100%; min-height: 150px; margin: 18px 0 0; border: 1px solid var(--line); background: #07111f; color: var(--ink); font: 11px/1.6 'Noto Sans JP', sans-serif; padding: 12px; resize: vertical; }
     /* The "Add" checkbox at the right of each recording row. */
-    .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'DM Mono', monospace; cursor: pointer; }
+    .check-control { justify-self: end; display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font: 10px 'Noto Sans JP', sans-serif; cursor: pointer; }
     .recording-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
     /* Show groups: recordings.csv/wants.csv rows sharing a Show are folded
        together under one <details>, closed by default so the collection reads
@@ -75,7 +77,7 @@
     .show-group-summary::-webkit-details-marker { display: none; }
     /* Count + chevron on the right of the show name, in place of the Add
        checkbox column used on a plain (ungrouped) row. */
-    .show-group-meta { justify-self: end; display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+    .show-group-meta { justify-self: end; display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font: 10px 'Noto Sans JP', sans-serif; text-transform: uppercase; }
     .show-group-meta::after { content: '⌄'; color: var(--accent); font-size: 13px; transition: transform .2s; }
     .show-group[open] > .show-group-summary .show-group-meta::after { transform: rotate(180deg); }
     .show-group-summary:hover .recording-title { color: var(--accent); }
@@ -117,7 +119,7 @@
     .index-card { display: block; padding: 26px; border: 1px solid var(--line); background: #0d1d30; transition: .2s; }
     .index-card:hover { border-color: var(--accent); background: #12304b; }
     .index-card h3 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
-    .index-card p { margin: 10px 0 0; color: var(--muted); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+    .index-card p { margin: 10px 0 0; color: var(--muted); font: 10px 'Noto Sans JP', sans-serif; text-transform: uppercase; }
     @media (max-width: 700px) { .index-grid { grid-template-columns: 1fr; gap: 12px; padding: 28px 0 60px; } }
     /* On phones the dropdown is left-aligned instead of centred. */
     @media (max-width: 700px) { .site-header { gap: 16px; } .main-nav { gap: 16px; } .collection-dropdown { left: 0; transform: none; } }
@@ -162,13 +164,15 @@
         <!-- Information band: your trading rules, contact rules and contact details. Plain text - edit it directly here. -->
         <div class="intro-band">
           <div>
-            <ul class="info-list"></ul>
+            <h3 class="info-title">Information</h3>
+            <h4 class="info-subheading">General Info</h4>
             <ul class="info-list">
               <li>Trading only for my wants.</li>
               <li>I do trades of up to 10 recordings (I can sometimes do more if I am less busy and we traded before).</li>
               <li>I do not collect audios and will only trade for ones in my wants, even if my trade status is open.</li>
               <li>Since I do not own many audios, I will trade unfairly for my wanted audios (1 audio: 1 video).</li>
             </ul>
+            <h4 class="info-subheading">Contact Rules</h4>
             <ul class="info-list">
               <li>When my trade status is limited, please let me know which of my wants you have if you do not have Encora. I do not have time to look through lists.</li>
               <li>I prefer being contacted by email, unless we have already started a conversation on Discord.</li>
