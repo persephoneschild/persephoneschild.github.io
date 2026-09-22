@@ -47,7 +47,6 @@
     .home-stats { max-width: none; margin: 0; text-align: left; grid-template-columns: 1fr 1fr; }
     .home-stats div, .home-stats div + div { justify-content: center; padding-left: 0; padding-right: 0; text-align: center; }
     .info-list { font-size: 16px; line-height: 1.7; }
-    .intro-band .eyebrow { font-size: 22px; }
     .intro-band .info-list, .intro-band .contact-block { font-size: 17px; }
     .intro-band { display: block; }
     .intro-band > div { width: 100%; }
@@ -117,7 +116,6 @@
     .index-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; padding: 40px 0 90px; }
     .index-card { display: block; padding: 26px; border: 1px solid var(--line); background: #0d1d30; transition: .2s; }
     .index-card:hover { border-color: var(--accent); background: #12304b; }
-    .index-card .eyebrow { margin: 0 0 14px; }
     .index-card h3 { margin: 0; font-size: 26px; letter-spacing: -.03em; }
     .index-card p { margin: 10px 0 0; color: var(--muted); font: 10px 'DM Mono', monospace; text-transform: uppercase; }
     @media (max-width: 700px) { .index-grid { grid-template-columns: 1fr; gap: 12px; padding: 28px 0 60px; } }
@@ -152,7 +150,6 @@
       <section class="view active" id="home-view" data-view="home">
         <div class="hero-grid">
           <div class="hero-copy">
-            <p class="eyebrow">Home</p>
             <h1>PersephonesChild<br><em>Collection</em></h1>
             <p class="last-updated" id="last-updated">Last Updated: —</p>
           </div>
@@ -165,16 +162,13 @@
         <!-- Information band: your trading rules, contact rules and contact details. Plain text - edit it directly here. -->
         <div class="intro-band">
           <div>
-            <p class="eyebrow">Information</p>
             <ul class="info-list"></ul>
-            <p class="eyebrow">General Info</p>
             <ul class="info-list">
               <li>Trading only for my wants.</li>
               <li>I do trades of up to 10 recordings (I can sometimes do more if I am less busy and we traded before).</li>
               <li>I do not collect audios and will only trade for ones in my wants, even if my trade status is open.</li>
               <li>Since I do not own many audios, I will trade unfairly for my wanted audios (1 audio: 1 video).</li>
             </ul>
-            <p class="eyebrow">Contact Rules</p>
             <ul class="info-list">
               <li>When my trade status is limited, please let me know which of my wants you have if you do not have Encora. I do not have time to look through lists.</li>
               <li>I prefer being contacted by email, unless we have already started a conversation on Discord.</li>
@@ -193,7 +187,6 @@
       <section class="view" id="videos-view" data-view="videos">
         <div class="page-heading">
           <div>
-            <p class="eyebrow">01 / Videos</p>
             <h2>Videos</h2>
           </div>
           <p class="heading-aside">The videos are split alphabetically by title, ignoring articles like “the”, “a”, and “an”. Shows with over 15 videos have their own page.</p>
@@ -203,10 +196,9 @@
 
       <!-- COLLECTION PAGE (shared by Videos, Hadestown and Audios - the heading changes to match). -->
       <section class="view" id="collection-view" data-view="collection">
-        <!-- Heading. The eyebrow and title text are replaced by app.js depending on which of the three pages is open. -->
+        <!-- Heading. The title text is replaced by app.js depending on which of the three pages is open. -->
         <div class="page-heading">
           <div>
-            <p class="eyebrow" id="collection-eyebrow">03 / Audios</p>
             <h2 id="collection-title">Audios</h2>
           </div>
           <p class="heading-aside">Select a recording to add it to your request. The collection is ordered by title, ignoring articles like “the”, “a”, and “an”.</p>
@@ -237,7 +229,6 @@
       <section class="view" id="wants-view" data-view="wants">
         <div class="page-heading">
           <div>
-            <p class="eyebrow">04 / Wants</p>
             <h2>Wants</h2>
           </div>
           <p class="heading-aside">My current wants, some of which could be trades in progress.</p>
@@ -269,7 +260,6 @@
       <section class="view" id="cart-view" data-view="cart">
         <div class="page-heading">
           <div>
-            <p class="eyebrow">Your request</p>
             <h2>Cart</h2>
           </div>
           <p class="heading-aside">Copy your request and send me an email :)</p>

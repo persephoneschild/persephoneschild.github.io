@@ -37,7 +37,6 @@ const COLLECTION_ROUTES = {
   // Everything marked as Audio in the "Audio / Video" column.
   audios: {
     title: 'Audios',
-    eyebrow: '07 / Audios',
     filter: (recording) => recording['Audio / Video'] === 'Audio',
     sortOptions: TITLE_SORT_OPTIONS,
   },
@@ -45,7 +44,6 @@ const COLLECTION_ROUTES = {
   // date sorting (see DATE_SORT_OPTIONS above) instead of the usual A–Z.
   hadestown: {
     title: 'Hadestown',
-    eyebrow: '07 / Hadestown',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() === 'hadestown',
@@ -54,7 +52,6 @@ const COLLECTION_ROUTES = {
   // New in that shows recordings collected in the last 7 days
   'New-In': {
     title: 'New In',
-    eyebrow: 'Added in the last 7 days',
     filter: (recording) => {
       const collectedDate = new Date(recording.Collected);
       const sevenDaysAgo = new Date();
@@ -70,7 +67,6 @@ const COLLECTION_ROUTES = {
   // All other videos, split alphabetically into pages 
   'videos-#-b': {
     title: 'Videos #–B',
-    eyebrow: '01 / Videos #–B',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -79,7 +75,6 @@ const COLLECTION_ROUTES = {
   },
   'videos-c-e': {
     title: 'Videos C–E',
-    eyebrow: '02 / Videos C–E',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -89,7 +84,6 @@ const COLLECTION_ROUTES = {
   },
   'videos-f-i': {
     title: 'Videos F–I',
-    eyebrow: '03 / Videos F–I',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -99,7 +93,6 @@ const COLLECTION_ROUTES = {
   },
   'videos-j-m': {
     title: 'Videos J–M',
-    eyebrow: '04 / Videos J–M',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -109,7 +102,6 @@ const COLLECTION_ROUTES = {
   },
   'videos-n-r': {
     title: 'Videos N–R',
-    eyebrow: '05 / Videos N–R',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -119,7 +111,6 @@ const COLLECTION_ROUTES = {
   },
   'videos-s-z': {
     title: 'Videos S–Z',
-    eyebrow: '06 / Videos S–Z',
     filter: (recording) =>
       recording['Audio / Video'] === 'Video' &&
       recordingTitle(recording).toLowerCase() !== 'hadestown' &&
@@ -419,7 +410,7 @@ function renderVideoIndex() {
     const route = COLLECTION_ROUTES[key];
     if (!route) return '';
     const count = state.recordings.filter(route.filter).length;
-    return `<a class="index-card" href="#${key}"><p class="eyebrow">${route.eyebrow}</p><h3>${route.title}</h3><p>${formatCount(count, 'recording')}</p></a>`;
+    return `<a class="index-card" href="#${key}"><h3>${route.title}</h3><p>${formatCount(count, 'recording')}</p></a>`;
   }).join('');
 }
 
@@ -639,7 +630,6 @@ function renderRecordings() {
   const sort = document.querySelector('#collection-sort').value;
 
   // Update the page heading to match the route.
-  document.querySelector('#collection-eyebrow').textContent = route.eyebrow;
   document.querySelector('#collection-title').textContent = route.title;
 
   // Keep recordings that belong on this page AND match the search. The search
