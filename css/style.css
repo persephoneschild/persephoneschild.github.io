@@ -1,13 +1,13 @@
 :root {
-  --navy: #0d2150;
-  --blue: #1b56c9;
-  --blue-dark: #12409c;
+  --navy: #0b1f4e;
+  --blue: #1b58d0;
+  --blue-dark: #0f3e9d;
   --tint: #eaf1fc;
   --paper: #f7faff;
   --ink: #16233f;
   --muted: #5b6b8a;
   --line: #d3dff3;
-  --nft: #c0171d;
+  --nft: #d61d23;
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
 }
 * { box-sizing: border-box; }
