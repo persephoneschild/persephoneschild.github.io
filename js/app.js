@@ -175,8 +175,8 @@ async function initCollection() {
     nav.hidden = true;
     landing.innerHTML =
       (SHOW_PAGES.length ? `<h2>Show-Specific Pages</h2><ul class="link-list">${SHOW_PAGES.map((p, i) => link(p.id, p.label, showCounts[i])).join("")}</ul>` : "") +
-      `<h2>Everything else, alphabetically</h2><ul class="link-list letters">${letterPages.map((p, i) => letterCounts[i] ? link(p.id, p.label, letterCounts[i]) : "").join("")}</ul>` +
-      `<h2>Audio</h2><ul class="link-list">${link(AUDIO_GROUP.id, "All audio recordings", audios.length)}</ul>`;
+      `<h2>Video</h2><ul class="link-list letters">${letterPages.map((p, i) => letterCounts[i] ? link(p.id, p.label, letterCounts[i]) : "").join("")}</ul>` +
+      `<h2>Audio</h2><ul class="link-list">${link(AUDIO_GROUP.id, "All audios", audios.length)}</ul>`;
     landing.hidden = false;
     return;
   }
