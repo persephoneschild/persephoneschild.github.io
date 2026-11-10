@@ -171,7 +171,7 @@ async function initCollection() {
   // Landing page: lists of links
   if (!current) {
     document.title = "Collection";
-    titleEl.textContent = `Video (${videos.length} recordings)`;
+    titleEl.textContent = `Collection (${videos.length} recordings)`;
     nav.hidden = true;
     landing.innerHTML =
       (SHOW_PAGES.length ? `<h2>Show-Specific Pages</h2><ul class="link-list">${SHOW_PAGES.map((p, i) => link(p.id, p.label, showCounts[i])).join("")}</ul>` : "") +
