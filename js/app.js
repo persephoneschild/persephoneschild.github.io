@@ -10,11 +10,14 @@ const LETTERS = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 
 const AUDIO_GROUP = { id: "audio", label: "Audio" };
 
-// Show-specific pages (videos only). Each gets its own link on the Collection
-// page, and those shows are left out of the letter pages.
-// id = short name for the address, label = text shown, show = name exactly as in the CSV.
-const SHOW_PAGES = [
-  { id: "hadestown", label: "Hadestown", show: "Hadestown" },
+// Any show with at least this many videos automatically gets its own page.
+// (16 = "more than 15".) Change the number to move the cutoff.
+const MIN_VIDEOS_FOR_OWN_PAGE = 15;
+
+// Shows that should ALWAYS get their own page, even with fewer videos.
+// Use the show name exactly as it is in the CSV (capital letters don't matter).
+const EXTRA_SHOW_PAGES = [
+  // "Hadestown",
 ];
 
 // Leading words ignored when sorting
@@ -151,20 +154,30 @@ async function initCollection() {
   const results = document.getElementById("results");
   const nav = document.getElementById("subnav");
 
+  const letterOf = r => firstLetter(r.Show) || "#";
   const letterPages = LETTERS.map(L => ({ id: L === "#" ? "num" : L.toLowerCase(), label: L, letter: L }));
-  const current = [...SHOW_PAGES, AUDIO_GROUP, ...letterPages].find(s => s.id === param);
 
   let all;
   try { all = await loadCSV(COLLECTION_CSV); }
   catch (e) { results.hidden = false; nav.hidden = true; showError(e); return; }
 
   const showKey = r => (r.Show || "").trim().toLowerCase();
-  const hasOwnPage = r => SHOW_PAGES.some(p => p.show.toLowerCase() === showKey(r));
-  const letterOf = r => firstLetter(r.Show) || "#";
   const videos = all.filter(isVideo);
   const audios = all.filter(isAudio);
 
-  const showCounts = SHOW_PAGES.map(p => videos.filter(r => showKey(r) === p.show.toLowerCase()).length);
+  // Work out which shows get their own page
+  const slug = t => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const showCount = {}, showName = {};
+  videos.forEach(r => { const k = showKey(r); if (!k) return; showCount[k] = (showCount[k] || 0) + 1; showName[k] = showName[k] || r.Show.trim(); });
+  const extra = EXTRA_SHOW_PAGES.map(n => n.trim().toLowerCase());
+  const showPages = Object.keys(showCount)
+    .filter(k => showCount[k] >= MIN_VIDEOS_FOR_OWN_PAGE || extra.includes(k))
+    .map(k => ({ id: slug(showName[k]) || "show", label: showName[k], show: showName[k], n: showCount[k] }))
+    .sort((a, b) => sortTitle(a.label).localeCompare(sortTitle(b.label)));
+
+  const hasOwnPage = r => showPages.some(p => p.show.toLowerCase() === showKey(r));
+  const current = [...showPages, AUDIO_GROUP, ...letterPages].find(s => s.id === param);
+
   const letterCounts = letterPages.map(p => videos.filter(r => !hasOwnPage(r) && letterOf(r) === p.letter).length);
   const link = (id, text, n) => `<li><a href="collection.html?g=${id}">${esc(text)}</a>${n === undefined ? "" : ` <span class="n">(${n})</span>`}</li>`;
 
@@ -174,7 +187,7 @@ async function initCollection() {
     titleEl.textContent = `Collection (${videos.length} recordings)`;
     nav.hidden = true;
     landing.innerHTML =
-      (SHOW_PAGES.length ? `<h2>Show-Specific Pages</h2><ul class="link-list">${SHOW_PAGES.map((p, i) => link(p.id, p.label, showCounts[i])).join("")}</ul>` : "") +
+      (showPages.length ? `<h2>Show-Specific Pages</h2><ul class="link-list">${showPages.map(p => link(p.id, p.label, p.n)).join("")}</ul>` : "") +
       `<h2>Video</h2><ul class="link-list letters">${letterPages.map((p, i) => letterCounts[i] ? link(p.id, p.label, letterCounts[i]) : "").join("")}</ul>` +
       `<h2>Audio</h2><ul class="link-list">${link(AUDIO_GROUP.id, "All audios", audios.length)}</ul>`;
     landing.hidden = false;
@@ -197,7 +210,6 @@ async function initCollection() {
 
   const items = [
     `<a href="collection.html">All video</a>`,
-    ...SHOW_PAGES.map(p => `<a href="collection.html?g=${p.id}" class="${p.id === current.id ? "active" : ""}">${esc(p.label)}</a>`),
     `<a href="collection.html?g=audio" class="${current.id === "audio" ? "active" : ""}">Audio</a>`,
     ...letterPages.filter((p, i) => letterCounts[i] || p.id === current.id)
       .map(p => `<a href="collection.html?g=${p.id}" class="${p.id === current.id ? "active" : ""}">${p.label}</a>`),
