@@ -11,28 +11,26 @@ const LETTERS = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
 const AUDIO_GROUP = { id: "audio", label: "Audio" };
 
 // Any show with at least this many videos automatically gets its own page.
-// (16 = "more than 15".) Change the number to move the cutoff.
 const MIN_VIDEOS_FOR_OWN_PAGE = 15;
 
 // Shows that should ALWAYS get their own page, even with fewer videos.
-// Use the show name exactly as it is in the CSV (capital letters don't matter).
 const EXTRA_SHOW_PAGES = [
-  // "Hadestown",
+  
 ];
 
 // Leading words ignored when sorting
 const IGNORED_LEADING_WORDS = ["the", "A", "An"];
-/* ============================================================ */
+
 
 const page = document.body.dataset.page;
 const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
 
-/* ---------- nav highlight ---------- */
+// nav highlight
 document.querySelectorAll(".main-nav a").forEach(a => {
   if (a.dataset.page === page) { a.classList.add("active"); a.setAttribute("aria-current", "page"); }
 });
 
-/* ---------- CSV ---------- */
+// CSV
 function parseCSV(text) {
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
   const rows = []; let row = [], field = "", inQuotes = false;
@@ -61,7 +59,7 @@ async function loadCSV(url) {
   return parseCSV(await res.text());
 }
 
-/* ---------- helpers ---------- */
+// helpers
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const isTrue = v => String(v || "").trim().toUpperCase() === "TRUE";
 const isVideo = r => (r["Audio / Video"] || "").toLowerCase() === "video";
@@ -104,7 +102,7 @@ function mergedNotes(r) {
   return [r["Master Notes"], r["Trading Notes"]].filter(Boolean).join("\n");
 }
 
-/* ---------- rendering ---------- */
+// rendering
 function row(label, value) {
   return value ? `<dt>${esc(label)}</dt><dd>${esc(value)}</dd>` : "";
 }
@@ -146,7 +144,7 @@ function showError(err) {
     `<p class="status">${esc(err.message)} If you opened this file straight from your computer, run <code>python3 -m http.server</code> in the site folder and visit <code>http://localhost:8000</code> instead.</p>`;
 }
 
-/* ---------- pages ---------- */
+// pages
 async function initCollection() {
   const param = new URLSearchParams(location.search).get("g");
   const titleEl = document.getElementById("title");
@@ -184,7 +182,7 @@ async function initCollection() {
   // Landing page: lists of links
   if (!current) {
     document.title = "Collection";
-    titleEl.textContent = `Collection (${videos.length} recordings)`;
+    titleEl.textContent = `Collection (${all.length} recordings)`;
     nav.hidden = true;
     landing.innerHTML =
       (showPages.length ? `<h2>Show-Specific Pages</h2><ul class="link-list">${showPages.map(p => link(p.id, p.label, p.n)).join("")}</ul>` : "") +
@@ -208,13 +206,7 @@ async function initCollection() {
   }
   document.title = `${titleEl.textContent} – Collection`;
 
-  const items = [
-    `<a href="collection.html">All video</a>`,
-    `<a href="collection.html?g=audio" class="${current.id === "audio" ? "active" : ""}">Audio</a>`,
-    ...letterPages.filter((p, i) => letterCounts[i] || p.id === current.id)
-      .map(p => `<a href="collection.html?g=${p.id}" class="${p.id === current.id ? "active" : ""}">${p.label}</a>`),
-  ];
-  nav.innerHTML = items.join("");
+  nav.innerHTML = `<a href="collection.html">&larr; Back to collection</a>`;
   nav.hidden = false;
   results.hidden = false;
   showList(sortRecords(rows), "collection");
