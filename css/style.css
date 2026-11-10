@@ -59,6 +59,12 @@ h2 { font-size: 1.2rem; font-weight: 600; color: var(--navy); margin: 36px 0 10p
 .entry dd { margin: 0; overflow-wrap: anywhere; white-space: pre-line; }
 .entry-link { margin: 8px 0 0; font-size: 0.92rem; }
 
+[hidden] { display: none !important; }
+.link-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.link-list li { padding: 3px 0; }
+.link-list .n { color: var(--muted); font-size: 0.9rem; }
+.link-list.letters { display: flex; flex-wrap: wrap; gap: 4px 26px; }
+
 /* NFT: red text, nothing else changes */
 .entry.nft, .entry.nft h3, .entry.nft dt, .entry.nft dd, .entry.nft .badge, .entry.nft a { color: var(--nft); }
 

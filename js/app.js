@@ -4,19 +4,15 @@
 const COLLECTION_CSV = "collection.csv";
 const WANTS_CSV = "wants.csv";
 
-// Video pages, split by the first letter of the show title.
-// Titles starting with a number or symbol go in the first group.
-const VIDEO_GROUPS = [
-  { id: "#-b", label: "Videos #-B", from: "A", to: "B" },
-  { id: "c-g", label: "Videos C–G", from: "C", to: "G" },
-  { id: "h-j", label: "Videos H–J", from: "H", to: "J" },
-  { id: "k-m", label: "Videos K–M", from: "K", to: "M" },
-  { id: "n-p", label: "Videos N–P", from: "N", to: "P" },
-  { id: "q-s", label: "Videos Q–S", from: "Q", to: "S" },
-  { id: "t-z", label: "Videos T–Z", from: "T", to: "Z" },
-];
+// Video pages: one per letter (plus "#" for titles starting with a number).
+// Letters with no videos are left off the Collection page automatically.
+const LETTERS = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+
 const AUDIO_GROUP = { id: "audio", label: "Audio" };
 
+// Show-specific pages (videos only). Each gets its own link on the Collection
+// page, and those shows are left out of the letter pages.
+// id = short name for the address, label = text shown, show = name exactly as in the CSV.
 const SHOW_PAGES = [
   { id: "hadestown", label: "Hadestown", show: "Hadestown" },
 ];
@@ -70,7 +66,7 @@ const isAudio = r => (r["Audio / Video"] || "").toLowerCase() === "audio";
 
 function sortTitle(show) {
   let t = (show || "").trim().toLowerCase().replace(/^[^a-z0-9]+/, "");
-  for (const w of IGNORED_LEADING_WORDS) if (t.startsWith(w + " ")) { t = t.slice(w.length + 1); break; }
+  for (const w0 of IGNORED_LEADING_WORDS) { const w = w0.toLowerCase(); if (t.startsWith(w + " ")) { t = t.slice(w.length + 1); break; } }
   return t;
 }
 function firstLetter(show) {
@@ -83,16 +79,12 @@ function dateKey(d) {
   if (iso) return +iso[1] * 10000 + +iso[2] * 100 + +iso[3];
   const y = s.match(/\d{4}/); if (!y) return 0;
   const mi = MONTHS.findIndex(m => s.includes(m));
-  return +y[0] * 10000 + (mi + 1) * 100;
+  const day = s.match(/(\d{1,2}),\s*\d{4}/);
+  return +y[0] * 10000 + (mi + 1) * 100 + (day ? +day[1] : 0);
 }
 function sortRecords(rows) {
   return rows.slice().sort((a, b) =>
     sortTitle(a.Show).localeCompare(sortTitle(b.Show)) || dateKey(a.Date) - dateKey(b.Date));
-}
-function inGroup(row, g) {
-  const L = firstLetter(row.Show);
-  if (!L) return g.from === VIDEO_GROUPS[0].from;
-  return L >= g.from && L <= g.to;
 }
 
 // NFT = "not for trade": forever, or until a date that hasn't passed yet.
@@ -153,25 +145,67 @@ function showError(err) {
 
 /* ---------- pages ---------- */
 async function initCollection() {
+  const param = new URLSearchParams(location.search).get("g");
+  const titleEl = document.getElementById("title");
+  const landing = document.getElementById("landing");
+  const results = document.getElementById("results");
   const nav = document.getElementById("subnav");
-  const sections = [...VIDEO_GROUPS, AUDIO_GROUP, ...SHOW_PAGES];
-  const current = sections.find(s => s.id === new URLSearchParams(location.search).get("g")) || sections[0];
-  nav.innerHTML = sections.map(s =>
-    `<a href="collection.html?g=${s.id}" class="${s.id === current.id ? "active" : ""}"${s.id === current.id ? ' aria-current="page"' : ""}>${esc(s.label)}</a>`).join("");
-  document.title = `${current.label} – Collection`;
-  try {
-    const all = await loadCSV(COLLECTION_CSV);
-let rows;
-if (current.show) {
-rows = all.filter(r => isVideo(r) && (r.Show || "").trim().toLowerCase() === current.show.toLowerCase());} else if (current.id === "audio") {
-  rows = all.filter(isAudio);
-} else {
-  rows = all.filter(isVideo)
-  .filter(r => inGroup(r, current))
-  .filter(r => !SHOW_PAGES.some(p => p.show.toLowerCase() === (r.Show || "").trim().toLowerCase()));
-}
-    showList(sortRecords(rows), "collection");
-  } catch (e) { showError(e); }
+
+  const letterPages = LETTERS.map(L => ({ id: L === "#" ? "num" : L.toLowerCase(), label: L, letter: L }));
+  const current = [...SHOW_PAGES, AUDIO_GROUP, ...letterPages].find(s => s.id === param);
+
+  let all;
+  try { all = await loadCSV(COLLECTION_CSV); }
+  catch (e) { results.hidden = false; nav.hidden = true; showError(e); return; }
+
+  const showKey = r => (r.Show || "").trim().toLowerCase();
+  const hasOwnPage = r => SHOW_PAGES.some(p => p.show.toLowerCase() === showKey(r));
+  const letterOf = r => firstLetter(r.Show) || "#";
+  const videos = all.filter(isVideo);
+  const audios = all.filter(isAudio);
+
+  const showCounts = SHOW_PAGES.map(p => videos.filter(r => showKey(r) === p.show.toLowerCase()).length);
+  const letterCounts = letterPages.map(p => videos.filter(r => !hasOwnPage(r) && letterOf(r) === p.letter).length);
+  const link = (id, text, n) => `<li><a href="collection.html?g=${id}">${esc(text)}</a>${n === undefined ? "" : ` <span class="n">(${n})</span>`}</li>`;
+
+  // Landing page: lists of links
+  if (!current) {
+    document.title = "Collection";
+    titleEl.textContent = `Video (${videos.length} recordings)`;
+    nav.hidden = true;
+    landing.innerHTML =
+      (SHOW_PAGES.length ? `<h2>Show-Specific Pages</h2><ul class="link-list">${SHOW_PAGES.map((p, i) => link(p.id, p.label, showCounts[i])).join("")}</ul>` : "") +
+      `<h2>Everything else, alphabetically</h2><ul class="link-list letters">${letterPages.map((p, i) => letterCounts[i] ? link(p.id, p.label, letterCounts[i]) : "").join("")}</ul>` +
+      `<h2>Audio</h2><ul class="link-list">${link(AUDIO_GROUP.id, "All audio recordings", audios.length)}</ul>`;
+    landing.hidden = false;
+    return;
+  }
+
+  // Sub pages: a list of recordings
+  let rows;
+  if (current.show) {
+    rows = videos.filter(r => showKey(r) === current.show.toLowerCase());
+    titleEl.textContent = current.label;
+  } else if (current.id === "audio") {
+    rows = audios;
+    titleEl.textContent = "Audio";
+  } else {
+    rows = videos.filter(r => !hasOwnPage(r) && letterOf(r) === current.letter);
+    titleEl.textContent = `Video: ${current.label}`;
+  }
+  document.title = `${titleEl.textContent} – Collection`;
+
+  const items = [
+    `<a href="collection.html">All video</a>`,
+    ...SHOW_PAGES.map(p => `<a href="collection.html?g=${p.id}" class="${p.id === current.id ? "active" : ""}">${esc(p.label)}</a>`),
+    `<a href="collection.html?g=audio" class="${current.id === "audio" ? "active" : ""}">Audio</a>`,
+    ...letterPages.filter((p, i) => letterCounts[i] || p.id === current.id)
+      .map(p => `<a href="collection.html?g=${p.id}" class="${p.id === current.id ? "active" : ""}">${p.label}</a>`),
+  ];
+  nav.innerHTML = items.join("");
+  nav.hidden = false;
+  results.hidden = false;
+  showList(sortRecords(rows), "collection");
 }
 
 async function initWants() {
