@@ -21,15 +21,18 @@
   </div>
 </header>
 <main class="wrap">
-  <h1>Collection</h1>
-  <nav class="subnav" id="subnav" aria-label="Collection sections"></nav>
-  <div class="toolbar">
-    <label class="search"><span class="sr-only">Search this page</span>
-      <input type="search" id="search" placeholder="Search this page"></label>
-    <span class="count" id="count" aria-live="polite"></span>
+  <h1 id="title">Collection</h1>
+  <nav class="subnav" id="subnav" aria-label="Collection sections" hidden></nav>
+  <div id="landing" hidden></div>
+  <div id="results" hidden>
+    <div class="toolbar">
+      <label class="search"><span class="sr-only">Search this page</span>
+        <input type="search" id="search" placeholder="Search this page"></label>
+      <span class="count" id="count" aria-live="polite"></span>
+    </div>
+    <p class="legend"><span class="nft-sample">Red entries</span> are NFT (not for trade).</p>
+    <div id="list" class="list"><p class="status">Loading&hellip;</p></div>
   </div>
-  <p class="legend"><span class="nft-sample">Red entries</span> are NFT (not for trade).</p>
-  <div id="list" class="list"><p class="status">Loading&hellip;</p></div>
 </main>
 <script src="js/app.js"></script>
 </body>
