@@ -136,7 +136,9 @@ def format_date_field(date_obj):
     day_known = date_obj.get("day_known", True)
 
     if month_known and day_known:
-        result = full_date
+        month_index = int(full_date[5:7]) - 1
+        day = int(full_date[8:10])
+        result = f"{MONTH_NAMES[month_index]} {day}, {full_date[0:4]}"
     else:
         year = full_date[0:4]
         if month_known:
