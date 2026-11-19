@@ -2,13 +2,10 @@ name: Sync Encora collection
 
 on:
   schedule:
-    # 03:17 UTC daily. Off the hour on purpose, so it's not competing with
-    # every other repo's cron jobs that fire exactly on the hour.
-    - cron: '17 3 * * *'
-  # Lets you trigger a run by hand from the Actions tab, for testing.
-  workflow_dispatch:
+    - cron: '08 2 * * *' # Time
+  workflow_dispatch: # manual trigger from the Actions tab
 
-# Needed so the workflow is allowed to push the updated CSVs back to the repo.
+# Needed so the workflow can push the updated CSVs back to the repo.
 permissions:
   contents: write
 
@@ -32,8 +29,7 @@ jobs:
           git config user.name "encora-sync-bot"
           git config user.email "actions@users.noreply.github.com"
           git add collection.csv wants.csv
-          # Only commit if something actually changed, so this doesn't create
-          # an empty commit (and a Pages rebuild) every single day.
+          # Skip if nothing changed, to avoid an empty commit/Pages rebuild every day.
           if git diff --cached --quiet; then
             echo "No changes."
           else
